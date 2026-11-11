@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1f6f5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>アルコールチェック｜㈱中西組</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+body{font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;background:#eff4f2;color:#202124;font-size:18px}
+header{background:#1f6f5c;color:#fff;padding:calc(env(safe-area-inset-top) + 14px) 24px 14px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:22px}
+header .clock{font-size:20px;font-weight:700}
+header button{background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:15px;margin-left:12px}
+main{padding:20px 24px;max-width:1100px;margin:0 auto}
+h2{font-size:22px;margin-bottom:14px;color:#14503f}
+.hide{display:none!important}
+/* 名前の一覧 */
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.names button{background:#fff;border:2px solid #cfe0d9;border-radius:16px;padding:20px 8px 14px;font-size:24px;font-weight:700;color:#202124;min-height:104px}
+.names button small{display:block;font-size:14px;font-weight:normal;margin-top:8px;color:#5f6368}
+.names button .ok{color:#1e8e3e;font-weight:700}.names button .ng{color:#c5221f;font-weight:700}
+/* 入力画面 */
+.inp{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media (max-width:760px){.inp{grid-template-columns:1fr}}
+.box{background:#fff;border-radius:18px;padding:20px}
+.who{font-size:30px;font-weight:800}
+.kind{display:inline-block;margin-top:8px;background:#e3f1ec;color:#14503f;border-radius:10px;padding:6px 14px;font-size:20px;font-weight:700}
+.lbl{font-size:15px;color:#5f6368;margin:20px 0 8px}
+.disp{border:3px solid transparent}
+.disp.on{border-color:#7dffb0}
+.disp.plate{color:#fff;letter-spacing:.3em;text-align:center}
+.disp.plate .ph{color:#456}
+.lbl.on{color:#14503f;font-weight:700}
+.seg2{display:flex;gap:8px;margin-bottom:10px}
+.seg2 button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 4px;font-size:16px;font-weight:700;color:#5f6368}
+.seg2 #visOk.on{border-color:#1e8e3e;background:#1e8e3e;color:#fff}
+.seg2 #visNg.on{border-color:#c5221f;background:#c5221f;color:#fff}
+.leads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.leads button{border:none;background:#1e8e3e;color:#fff;border-radius:14px;padding:20px 6px;font-size:22px;font-weight:800}
+.leads button small{display:block;font-size:13px;font-weight:normal;margin-top:4px}
+.leads.ng button{background:#c5221f}
+.list .it button.on{border-color:#1e8e3e;background:#1e8e3e;color:#fff}
+.list .it button.onng{border-color:#c5221f;background:#c5221f;color:#fff}
+.list .it button.onskip{border-color:#5f6368;background:#5f6368;color:#fff}
+.list .it button{margin-left:4px}
+.list .it.skip{opacity:.55}
+.tag.ng{background:#c5221f;color:#fff;border-radius:8px;padding:6px 10px;font-size:14px}
+header button.send{background:rgba(255,255,255,.18)}
+header button.send.org{background:#e8710a}
+header button.send.red{background:#c5221f}
+header .clock{margin-left:12px}
+.grp{grid-column:1/-1;font-size:15px;font-weight:700;color:#14503f;margin-top:10px;border-bottom:2px solid #cfe0d9;padding-bottom:4px}
+.grp:first-child{margin-top:0}
+.grp.sub{color:#5f6368}
+.cam{position:relative;background:#14231f;border-radius:14px;overflow:hidden;height:210px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
+.cam video{height:100%;transform:scaleX(-1)}
+.cam span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:5px 10px;text-align:center}
+.cam.off video{display:none}
+.it img.face{width:84px;height:63px;object-fit:cover;border-radius:8px;background:#ddd}
+.it .noface{width:84px;height:63px;border-radius:8px;background:#eee;color:#888;font-size:12px;display:flex;align-items:center;justify-content:center}
+.flash{position:fixed;inset:0;background:#fff;opacity:.8;z-index:60;pointer-events:none}
+.cars{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cars button{border:none;background:#1e8e3e;color:#fff;border-radius:14px;padding:20px 8px;font-size:21px;font-weight:700}
+.cars button small{display:block;font-size:13px;font-weight:normal;margin-top:4px;opacity:.9}
+.cars button.same{grid-column:1/-1;padding:26px 8px;font-size:26px}
+.cars.hit button{background:#c5221f}
+.disp{background:#14231f;color:#7dffb0;border-radius:14px;text-align:right;font-size:64px;font-weight:700;font-family:ui-monospace,Menlo,monospace;padding:12px 22px}
+.disp small{font-size:20px;color:#9fc}
+.disp.hit{color:#ff8a80}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.pad button{background:#fff;border:2px solid #cfe0d9;border-radius:14px;font-size:32px;font-weight:700;padding:14px 0}
+.go{display:block;width:100%;margin-top:14px;border:none;border-radius:16px;padding:22px;font-size:26px;font-weight:800;color:#fff;background:#1e8e3e}
+.go.hit{background:#c5221f}
+.back{display:block;width:100%;margin-top:10px;border:none;border-radius:14px;padding:14px;font-size:18px;background:#e3ebe8;color:#14503f}
+/* 完了 */
+.fin{text-align:center;padding:60px 20px;background:#fff;border-radius:20px}
+.fin b{display:block;font-size:40px;color:#1e8e3e;margin-bottom:12px}
+.fin.ng{background:#fdecea;border:3px solid #c5221f}.fin.ng b{color:#c5221f}
+.fin p{font-size:22px;line-height:1.7}
+/* 確認 */
+.list .it{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:14px 18px;margin-bottom:10px}
+.list .it .nm{flex:1;font-size:20px;font-weight:700}.list .it .nm small{display:block;color:#5f6368;font-size:14px;font-weight:normal}
+.list .it .v{font-weight:800;font-size:24px;color:#1e8e3e}.list .it .v.hit{color:#c5221f}
+.list .it button{border:2px solid #c5221f;color:#c5221f;background:#fff;border-radius:10px;padding:10px 14px;font-size:15px}
+.list .it.stop{background:#fdecea}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.row select,.row input{padding:12px;border:1px solid #cfd9d5;border-radius:10px;font-size:18px;background:#fff;-webkit-user-select:text;user-select:text}
+.note{font-size:14px;color:#5f6368;margin-top:12px;line-height:1.7}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#333;color:#fff;padding:12px 22px;border-radius:22px;font-size:17px;opacity:0;transition:.3s;pointer-events:none}
+#toast.on{opacity:1}
+/* 記録簿 */
+#printArea{display:none}
+.sheet h3{text-align:center;font-size:15pt;letter-spacing:.3em;font-weight:normal;margin-bottom:1mm}
+.sheet .hd{display:flex;justify-content:space-between;font-size:9pt;margin-bottom:2mm}
+.sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
+.sheet th,.sheet td{border:.6pt solid #000;padding:.8mm 1.2mm;height:7.2mm;font-size:8pt;word-break:break-all}
+.sheet th{background:#eee;font-weight:normal}
+.sheet td.c{text-align:center;white-space:nowrap}.sheet .hit{color:#c00;font-weight:bold}
+.sheet .ft{font-size:7.5pt;margin-top:2mm}
+@page{size:A4 landscape;margin:8mm}
+@media print{body>*{display:none!important}#printArea{display:block!important}.pg{break-after:page}.pg:last-child{break-after:auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1>アルコールチェック</h1>
+  <div><button id="sendBtn" class="send" onclick="sync(true)"></button><span class="clock" id="clock"></span><button onclick="pickLeader()" id="leadBtn">班長確認</button><button onclick="openConf()" id="confBtn">確認者</button></div>
+</header>
+
+<main>
+  <!-- ① 名前を押す -->
+  <section id="v-home">
+    <h2>名前を押してください</h2>
+    <div class="names" id="names"></div>
+    <p class="note" id="homeNote"></p>
+  </section>
+
+  <!-- ② 数値 → 車のナンバー → 記録 -->
+  <section id="v-inp" class="hide">
+    <div class="inp">
+      <div class="box">
+        <div class="who" id="iName"></div>
+        <div class="kind" id="iKind"></div>
+        <div class="lbl" id="lblVal">① チェッカーに出た数値</div>
+        <div class="disp" id="iDisp" onclick="setStep(1)">0.00 <small>mg/L</small></div>
+        <div class="lbl" id="lblCar">② 車のナンバー（4桁）</div>
+        <div class="disp plate" id="iPlate" onclick="setStep(2)"></div>
+        <button class="back" onclick="home()">やめる（名前の画面に戻る）</button>
+      </div>
+      <div class="box">
+        <div class="cam"><video id="cam" autoplay playsinline muted></video><span id="camTip">顔とチェッカーの画面が映るようにしてください。「記録する」で自動で撮ります</span></div>
+        <div class="pad" id="pad"></div>
+        <button class="go" id="iGo" onclick="goNext()"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 完了 -->
+  <section id="v-fin" class="hide"><div class="fin" id="fin"></div></section>
+
+  <!-- 班長の目視確認 -->
+  <section id="v-team" class="hide">
+    <h2 id="tTitle"></h2>
+    <p class="note" style="margin:-6px 0 12px">今日の自分の班の人を「見た・異常なし」にしてください（前回の班員には最初から印が付いています）。様子がおかしい人は「運転させない」。他の班の人は「見ていない」のままにします。</p>
+    <div class="list" id="tList"></div>
+    <button class="back" onclick="team(TL).forEach(r => TSEL[r.id] = TSEL[r.id] || (+r.value > 0 ? 'ng' : 'ok')); drawTeam()">表示している全員を選ぶ</button>
+    <p class="note" id="tYet" style="font-size:16px;color:#14503f"></p>
+    <button class="go" id="tGo" onclick="teamOk()"></button>
+    <button class="back" onclick="home()">あとで（名前の画面に戻る）</button>
+  </section>
+
+  <!-- 班長を選ぶ -->
+  <section id="v-lead" class="hide">
+    <h2>だれが確認しますか（班長・管理者）</h2>
+    <div class="names" id="lList"></div>
+    <button class="back" onclick="home()">戻る</button>
+  </section>
+
+  <!-- 確認キー -->
+  <section id="v-key" class="hide">
+    <div class="box" style="max-width:460px;margin:30px auto">
+      <h2>確認者の画面を開く</h2>
+      <div class="lbl">確認キー</div>
+      <input id="kIn" type="password" inputmode="numeric" autocomplete="off" style="width:100%;padding:14px;font-size:22px;border:1px solid #cfd9d5;border-radius:10px;-webkit-user-select:text;user-select:text" onkeydown="if(event.key==='Enter')keyOk()">
+      <button class="go" onclick="keyOk()">開く</button>
+      <button class="back" onclick="home()">戻る</button>
+    </div>
+  </section>
+
+  <!-- 確認者 -->
+  <section id="v-conf" class="hide">
+    <h2>確認待ち（今日）</h2>
+    <div class="list" id="cList"></div>
+    <div class="row">
+      確認者 <select id="cName"></select>
+      方法 <select id="cMethod"><option>対面</option><option>電話</option><option>ビデオ通話</option></select>
+    </div>
+    <button class="go" id="cAll" onclick="confirmAll()">目視確認 異常なし　まとめて確認</button>
+    <button class="back" onclick="printMonth()">今月の記録簿を印刷・PDF</button>
+    <button class="back" onclick="home()">名前の画面に戻る</button>
+    <p class="note">班長が確認できなかった人（班長本人の分を含む）を、安全運転管理者が確認する画面です。電話で声の調子を確かめて数値を聞いてから、方法を「電話」にして確認してください。運転させない人は先に「止める」を押します。</p>
+  </section>
+</main>
+<div id="printArea"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ★公開前に、GASのウェブアプリURLを入れる */
+const SYNC_URL = "https://script.google.com/macros/s/AKfycbxfZmxR7Kk1uQP1cvAjaPv191fB5QU86kG37BXf5LRiNnDFbe2wWiFFHBxoU_nHFBzZ/exec";
+
+const ld = (k, d) => { try{ return JSON.parse(localStorage.getItem("alc_" + k)) ?? d; }catch(e){ return d; } };
+const sv = (k, v) => { try{ localStorage.setItem("alc_" + k, JSON.stringify(v)); }catch(e){} };
+let RECS = ld("recs", []), MST = ld("mst", {drivers: [], cars: []}), Q = ld("q", []);
+let cur = null, val = "", KEY = "", keyTimer = null;
+const STOP = new Set();
+/* 顔写真は容量の大きい IndexedDB に置く（ひと月分ためても収まるように）。画面に出すのは当日分だけ */
+let PH = {};
+const IDB = new Promise(res => {
+  try{
+    const r = indexedDB.open("alc", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("ph");
+    r.onsuccess = () => res(r.result); r.onerror = () => res(null);
+  }catch(e){ res(null); }
+});
+async function idb(mode, fn){
+  const db = await IDB; if(!db) return null;
+  return new Promise(res => { try{ const t = db.transaction("ph", mode), st = t.objectStore("ph"); const q = fn(st); t.oncomplete = () => res(q && q.result); t.onerror = () => res(null); }catch(e){ res(null); } });
+}
+const phPut = (id, v) => idb("readwrite", st => st.put(v, id));
+const phGet = id => idb("readonly", st => st.get(id));
+const phDel = id => idb("readwrite", st => st.delete(id));
+async function phLoad(){   // 起動時：当日の写真を画面用に読み、送信済みの古い写真は消す
+  const db = await IDB; if(!db) return;
+  const keep = new Set(Q.filter(a => a.action === "submit").map(a => a.rec.id)), d = ymd();
+  await new Promise(res => {
+    const t = db.transaction("ph", "readwrite"), st = t.objectStore("ph"), c = st.openCursor();
+    c.onsuccess = () => { const cu = c.result; if(!cu) return; const v = cu.value || {};
+      if(v.d === d) PH[cu.key] = v.img; else if(!keep.has(cu.key)) cu.delete(); cu.continue(); };
+    t.oncomplete = res; t.onerror = res;
+  });
+}
+function svQ(){ try{ localStorage.setItem("alc_q", JSON.stringify(Q)); }catch(e){ toast("⚠ 端末の保存がいっぱいです。Wi-Fiのある所で送信してください"); } }
+const $ = id => document.getElementById(id);
+const p2 = n => String(n).padStart(2, "0");
+const ymd = (d = new Date()) => d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+const now = () => { const d = new Date(); return ymd(d) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2500); };
+
+function all(){
+  const ids = new Set(RECS.map(r => r.id));
+  const conf = {}; Q.filter(a => a.action === "confirm" || a.action === "leader").forEach(a => a.items.forEach(x => conf[x.id] = {ok: x.ok, by: a.name, at: a.at, method: a.method || "対面"}));
+  return RECS.concat(Q.filter(a => a.action === "submit" && !ids.has(a.rec.id)).map(a => a.rec))
+    .map(r => conf[r.id] ? Object.assign({}, r, {confirmer: conf[r.id].by, confirmedAt: conf[r.id].at, method: conf[r.id].method, status: conf[r.id].ok && !(+r.value > 0) ? "確認済" : "運転不可"}) : r);
+}
+const today = () => all().filter(r => r.date === ymd());
+const mine = n => today().filter(r => r.driver === n);
+const nextKind = n => { const m = mine(n); return m.some(r => r.kind === "前") && !m.some(r => r.kind === "後") ? "後" : "前"; };
+
+function show(v){ ["home", "inp", "fin", "conf", "key", "team", "lead"].forEach(x => $("v-" + x).classList.toggle("hide", x !== v)); window.scrollTo(0, 0); }
+
+/* ① 名前 */
+function home(){
+  cur = null; show("home"); camOff();
+  const btn = n => {
+    const m = mine(n), pre = m.find(r => r.kind === "前"), post = m.find(r => r.kind === "後");
+    const st = r => !r ? "—" : (+r.value > 0 ? `<span class="ng">${r.at.slice(11)}✕</span>` : `<span class="ok">${r.at.slice(11)}✓</span>`);
+    return `<button onclick="pick('${esc(n)}')">${esc(n)}<small>前 ${st(pre)}　後 ${st(post)}</small></button>`;
+  };
+  /* 課ごとに並べる。総務課は社用車を使うときだけなので一番下 */
+  const groups = [["工事課", ""], ["監理課", ""], ["", "その他"], ["総務課", "総務課（社用車を使うときだけ）"]];
+  const known = ["工事課", "監理課", "総務課"];
+  $("names").innerHTML = groups.map(([g, label]) => {
+    const l = MST.drivers.filter(n => g ? dept(n) === g : !known.includes(dept(n)));
+    if(!l.length) return "";
+    return `<div class="grp ${g === "総務課" ? "sub" : ""}">${esc(label || g)}</div>` + l.map(btn).join("");
+  }).join("");
+  $("homeNote").textContent = MST.drivers.length ? "" : "名簿を読み込んでいます…（スプレッドシートの「名簿」シートA列に名前を書いてください）";
+  const n = today().filter(r => !r.confirmer).length;
+  $("confBtn").textContent = "確認者";
+  $("leadBtn").textContent = "班長確認" + (n ? `（${n}）` : "");
+}
+
+/* カメラ（前面） */
+let STREAM = null;
+async function camOn(){
+  const box = $("cam").parentNode;
+  try{
+    if(!STREAM) STREAM = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user", width: {ideal: 640}, height: {ideal: 480}}, audio: false});
+    $("cam").srcObject = STREAM; box.classList.remove("off");
+    $("camTip").textContent = "顔とチェッカーの画面が映るようにしてください。「記録する」で自動で撮ります";
+  }catch(e){
+    box.classList.add("off");
+    $("camTip").textContent = "カメラが使えません（写真なしで記録されます）";
+  }
+}
+function camOff(){ if(STREAM){ STREAM.getTracks().forEach(t => t.stop()); STREAM = null; } }
+function snap(){
+  const v = $("cam");
+  if(!STREAM || !v.videoWidth) return "";
+  const w = 400, h = Math.round(w * v.videoHeight / v.videoWidth);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d").drawImage(v, 0, 0, w, h);   // 写真は左右反転しない（チェッカーの数字が読めるように）
+  const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 150);
+  return c.toDataURL("image/jpeg", 0.55);
+}
+
+/* ② 車両と数値 */
+let step = 1, plate = "";
+let FT = null;   // 「記録しました」画面から戻るタイマー（次の人が押したら止める）
+function pick(n){
+  clearTimeout(FT);
+  cur = n; val = "";
+  // 運転後は、その日の運転前のナンバーを最初から入れておく
+  plate = nextKind(n) === "後" ? ((mine(n).filter(r => r.kind === "前").pop() || {}).car || "").replace(/\D/g, "").slice(-4) : "";
+  $("iName").textContent = n;
+  $("iKind").textContent = nextKind(n) === "前" ? "運転前（出発前）" : "運転後（帰着後）";
+  $("pad").innerHTML = ["1","2","3","4","5","6","7","8","9","0","00","消す"].map(k => `<button onclick="key('${k}')">${k}</button>`).join("");
+  setStep(1);
+  show("inp"); camOn();
+  clearTimeout(window._idle); window._idle = setTimeout(home, 90000);   // 放置されたら名前の画面へ戻る
+}
+function setStep(n){ step = n; draw(); }
+function leaders(){ return MST.leaders || []; }
+/* 数値は右から詰める（5→0.05、1,5→0.15）。ナンバーは4桁まで */
+function key(k){
+  if(step === 1){
+    if(k === "消す") val = val.slice(0, -1);
+    else if(val.length < 3) val = (val + k).replace(/^0+/, "").slice(0, 3);
+  }else{
+    if(k === "消す") plate = plate.slice(0, -1);
+    else plate = (plate + k).slice(0, 4);
+  }
+  draw();
+}
+const num = () => (Number(val || "0") / 100);
+function draw(){
+  const v = num(), hit = v > 0;
+  $("iDisp").innerHTML = v.toFixed(2) + " <small>mg/L</small>";
+  $("iDisp").classList.toggle("hit", hit);
+  $("iPlate").innerHTML = plate ? plate : `<span class="ph">----</span>`;
+  $("iDisp").classList.toggle("on", step === 1); $("lblVal").classList.toggle("on", step === 1);
+  $("iPlate").classList.toggle("on", step === 2); $("lblCar").classList.toggle("on", step === 2);
+  $("iGo").classList.toggle("hit", hit);
+  $("iGo").textContent = step === 1 ? "次へ（車のナンバー）" : (hit ? "記録する（運転できません）" : "記録する");
+}
+function goNext(){
+  if(step === 1){ setStep(2); return; }
+  if(plate.length < 1){ toast("車のナンバー（4桁）を入れてください"); return; }
+  record();
+}
+function record(){
+  if(!cur) return;
+  const v = num(), kind = nextKind(cur), car = plate, who = cur;
+  const rec = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: ymd(), kind, at: now(), driver: who, car, value: v.toFixed(2), status: v > 0 ? "運転不可" : "確認待ち"};
+  const ph = snap();
+  if(ph){ rec.hasPh = 1; PH[rec.id] = ph; phPut(rec.id, {d: rec.date, img: ph}); }   // 送信待ちの記録には写真そのものは入れない
+  Q.push({action: "submit", rec}); svQ(); camOff();
+  clearTimeout(window._idle);
+  $("fin").className = "fin" + (v > 0 ? " ng" : "");
+  $("fin").innerHTML = v > 0
+    ? `<b>運転してはいけません</b><p>${esc(who)} さん　${rec.value} mg/L<br>すぐ安全運転管理者に連絡してください</p>`
+    : `<b>記録しました</b><p>${esc(who)} さん　${kind === "前" ? "運転前" : "運転後"}　0.00<br>ナンバー ${esc(car)}</p>`;
+  show("fin");
+  sync();
+  // 班長なら、そのまま今日の作業員の目視確認へ
+  clearTimeout(FT);
+  if(leaders().includes(who) && v === 0 && team(who).length) FT = setTimeout(() => openTeam(who), 1500);
+  else FT = setTimeout(home, v > 0 ? 8000 : 3000);
+}
+
+/* 班長の目視確認：今日記録してまだ確認されていない作業員（自分以外）をまとめて確認 */
+let TL = "", TSEL = {};
+/* 今日まだ確認されていない人（自分以外）を出し、班長が今日の班員を選ぶ。
+   監理課・総務課の人は管理者が直接確認するので、班長の一覧には出さない */
+const dept = n => (MST.dept || {})[n] || "";
+const isAdmin = n => (MST.admins || []).includes(n);
+const DIRECT = ["監理課", "総務課"];
+const team = n => today().filter(r => !r.confirmer && r.driver !== n && (isAdmin(n) || !DIRECT.includes(dept(r.driver))));
+/* 前回この班長が確認した人（編成が同じならそのまま押すだけで済むよう、最初の印に使う） */
+function lastCrew(n){
+  const mine = all().filter(r => r.confirmer === n && r.date < ymd());
+  if(!mine.length) return new Set(ld("crew_" + n, []));
+  const d = mine.reduce((m, r) => r.date > m ? r.date : m, "");
+  return new Set(mine.filter(r => r.date === d).map(r => r.driver));
+}
+function openTeam(n){
+  clearTimeout(FT);
+  TL = n; TSEL = {};
+  const crew = lastCrew(n);
+  // 前回の班員と、管理者なら監理課・総務課の人に最初から印
+  team(n).forEach(r => TSEL[r.id] = (crew.has(r.driver) || (isAdmin(n) && DIRECT.includes(dept(r.driver)))) ? (+r.value > 0 ? "ng" : "ok") : "");
+  drawTeam(); show("team");
+  clearTimeout(window._idle); window._idle = setTimeout(home, 180000);
+}
+function drawTeam(){
+  const l = team(TL);
+  $("tTitle").textContent = isAdmin(TL) ? `${TL} さん（管理者）：目視確認する人を選ぶ` : `${TL} さん：今日の班員を選んで目視確認`;
+  const done = new Set(today().filter(r => r.kind === "前").map(r => r.driver));
+  const yet = [...lastCrew(TL)].filter(d => d !== TL && !done.has(d) && dept(d) !== "総務課");
+  $("tYet").innerHTML = yet.length ? `前回の班員でまだ記録していない人：<b>${yet.map(esc).join("、")}</b>` : "";
+  $("tList").innerHTML = l.length ? l.map(r => {
+    const st = TSEL[r.id] || "", hit = +r.value > 0;
+    const img = PH[r.id] ? `<img class="face" src="${PH[r.id]}">` : `<div class="noface">写真${r.photo || r.hasPh ? "" : "なし"}</div>`;
+    return `<div class="it ${st === "ng" ? "stop" : (st ? "" : "skip")}">${img}<div class="nm">${esc(r.driver)}<small>${dept(r.driver) ? esc(dept(r.driver)) + "　" : ""}${r.kind === "前" ? "運転前" : "運転後"} ${r.at.slice(11)}　ナンバー ${esc(r.car)}</small></div>
+      <span class="v ${hit ? "hit" : ""}">${esc(r.value)}</span>
+      ${hit ? `<span class="tag ng">運転不可</span>` : `<button class="${st === "ok" ? "on" : ""}" onclick="tsel('${r.id}','ok')">見た・異常なし</button><button class="${st === "ng" ? "onng" : ""}" onclick="tsel('${r.id}','ng')">運転させない</button><button class="${!st ? "onskip" : ""}" onclick="tsel('${r.id}','')">見ていない</button>`}</div>`;
+  }).join("") : `<p class="note">今日の確認待ちはありません</p>`;
+  const n = Object.values(TSEL).filter(Boolean).length;
+  $("tGo").textContent = `${n}人を確認済みにする`;
+  $("tGo").classList.toggle("hide", !n);
+}
+function tsel(id, v){ TSEL[id] = v; drawTeam(); }
+function teamOk(){
+  const sel = team(TL).filter(r => TSEL[r.id]);
+  const items = sel.map(r => ({id: r.id, ok: TSEL[r.id] === "ok" && !(+r.value > 0)}));
+  if(!items.length) return;
+  sv("crew_" + TL, [...new Set(sel.map(r => r.driver))]);   // 次回の初期の印に使う
+  Q.push({action: "leader", name: TL, at: now(), items}); svQ();
+  toast(items.length + "人 確認しました"); sync(); home();
+}
+/* 右上「班長確認」：後から来た人の分 */
+function pickLeader(){
+  $("lList").innerHTML = leaders().map(n => `<button onclick="openTeam(this.dataset.n)" data-n="${esc(n)}">${esc(n)}<small>確認待ち ${team(n).length}人</small></button>`).join("")
+    || `<p class="note">班長が登録されていません（名簿シートのB列に「班長」か「管理者」と書く）</p>`;
+  show("lead");
+}
+
+/* 確認者（キーは入れてから5分だけ有効。共用iPadなので覚えない） */
+function openConf(){
+  if(!KEY){ $("kIn").value = ""; show("key"); setTimeout(() => $("kIn").focus(), 100); return; }
+  clearTimeout(keyTimer); keyTimer = setTimeout(() => { KEY = ""; if(!$("v-conf").classList.contains("hide")) home(); }, 300000);
+  const cn = ld("confName", "");
+  $("cName").innerHTML = ((MST.admins || []).length ? MST.admins : (MST.leaders || []).length ? MST.leaders : MST.drivers).map(n => `<option${n === cn ? " selected" : ""}>${esc(n)}</option>`).join("");
+  renderConf(); show("conf");
+}
+function keyOk(){
+  const k = $("kIn").value.trim(); if(!k){ toast("確認キーを入れてください"); return; }
+  KEY = k; openConf();
+}
+const pend = () => today().filter(r => !r.confirmer);
+function renderConf(){
+  const l = pend();
+  $("cList").innerHTML = l.length ? l.map(r => { const hit = +r.value > 0, stop = hit || STOP.has(r.id);
+    const img = PH[r.id] ? `<img class="face" src="${PH[r.id]}">` : `<div class="noface">${r.photo || r.hasPh ? "読込中" : "写真なし"}</div>`;
+    return `<div class="it ${stop ? "stop" : ""}">${img}<div class="nm">${esc(r.driver)}<small>${r.kind === "前" ? "運転前" : "運転後"} ${r.at.slice(11)}　ナンバー ${esc(r.car)}</small></div>
+    <span class="v ${hit ? "hit" : ""}">${esc(r.value)}</span>${hit ? "" : `<button onclick="tog('${r.id}')">${stop ? "戻す" : "止める"}</button>`}</div>`; }).join("")
+    : `<p class="note">今日の確認待ちはありません</p>`;
+  $("cAll").classList.toggle("hide", !l.length);
+  loadFaces(l);
+}
+/* 別の端末で記録された分の写真は、確認キーを付けて同期サーバから取り寄せる */
+const ASKED = new Set();
+async function loadFaces(l){
+  if(!SYNC_URL || !KEY) return;
+  for(const r of l){
+    if(!r.photo || PH[r.id] || ASKED.has(r.id)) continue;
+    ASKED.add(r.id);
+    try{
+      const d = await (await fetch(SYNC_URL + "?photo=" + encodeURIComponent(r.id) + "&key=" + encodeURIComponent(KEY))).json();
+      if(d.photo){ PH[r.id] = d.photo; if(!$("v-conf").classList.contains("hide")) renderConf(); }
+    }catch(e){}
+  }
+}
+function tog(id){ STOP.has(id) ? STOP.delete(id) : STOP.add(id); renderConf(); }
+function confirmAll(){
+  const l = pend(); if(!l.length) return;
+  const name = $("cName").value; sv("confName", name);
+  Q.push({action: "confirm", key: KEY, name, method: $("cMethod").value, at: now(), items: l.map(r => ({id: r.id, ok: !(+r.value > 0) && !STOP.has(r.id)}))}); svQ();
+  STOP.clear(); toast(l.length + "件 確認しました"); renderConf(); sync();
+}
+function printMonth(){
+  const m = ymd().slice(0, 7);
+  const rs = all().filter(r => r.date.startsWith(m)).sort((a, b) => a.at < b.at ? -1 : 1);
+  if(!rs.length){ toast("今月の記録がありません"); return; }
+  const P = 18, pages = []; for(let i = 0; i < rs.length; i += P) pages.push(rs.slice(i, i + P));
+  const th = ["日付:9", "区分:12", "時刻:11", "運転者:24", "車のナンバー:26", "確認方法:16", "検知器:13", "測定値<br>mg/L:13", "酒気帯び:13", "確認者:26", "確認日時:20", "指示事項:", "その他:40"]
+    .map(x => { const [t, w] = x.split(":"); return `<th${w ? ` style="width:${w}mm"` : ""}>${t}</th>`; }).join("");
+  $("printArea").innerHTML = pages.map((p, i) => `<div class="sheet pg"><h3>酒気帯び確認記録簿</h3>
+    <div class="hd"><span>令和${+m.slice(0, 4) - 2018}年${+m.slice(5)}月分</span><span>株式会社 中西組　${i + 1}/${pages.length}頁</span></div>
+    <table><tr>${th}</tr>${p.map(r => { const hit = +r.value > 0; return `<tr><td class="c">${+r.date.slice(5, 7)}/${+r.date.slice(8)}</td><td class="c">${r.kind === "前" ? "運転前" : "運転後"}</td><td class="c">${r.at.slice(11, 16)}</td>
+      <td>${esc(r.driver)}</td><td>${esc(r.car)}</td><td class="c">${esc(r.method || "")}</td><td class="c">使用</td><td class="c ${hit ? "hit" : ""}">${esc(r.value)}</td><td class="c ${hit ? "hit" : ""}">${hit ? "有" : "無"}</td>
+      <td>${esc(r.confirmer || "（未確認）")}</td><td class="c">${esc((r.confirmedAt || "").slice(5, 16))}</td><td>${r.status === "運転不可" ? "運転させない" : r.confirmer ? "特になし" : ""}</td><td>${r.confirmer ? (/異常あり/.test(r.method || "") ? "目視 異常あり" : "目視 異常なし") : ""}</td></tr>`; }).join("")}</table>
+    <div class="ft">道路交通法施行規則第9条の10に基づく記録。1年間保存すること。</div></div>`).join("");
+  setTimeout(() => window.print(), 200);
+}
+
+/* 同期（GAS）：電波があるときに10件ずつ送る。圏外ならためておく */
+let busy = false;
+async function sync(manual){
+  if(!SYNC_URL || busy){ drawSend(); return; }
+  busy = true; drawSend("送信中…");
+  let ok = true;
+  try{
+    do{
+      const send = Q.slice(0, 10);
+      const body = [];
+      for(const a of send){
+        if(a.action === "submit" && a.rec.hasPh){ const v = await phGet(a.rec.id); body.push(Object.assign({}, a, {rec: Object.assign({}, a.rec, {photo: v ? v.img : ""})})); }
+        else body.push(a);
+      }
+      const res = send.length ? await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({actions: body})})
+                              : await fetch(SYNC_URL + "?t=" + Date.now());
+      const d = await res.json();
+      if(send.length){
+        Q = Q.slice(send.length); svQ();
+        for(const a of send) if(a.action === "submit" && a.rec.date !== ymd()) phDel(a.rec.id);   // 送った古い写真は端末から消す
+        const e = (d.results || []).filter(x => x.error); if(e.length){ toast("⚠ " + e[0].error); if(/キー/.test(e[0].error)) KEY = ""; }
+      }
+      RECS = d.recs || RECS; sv("recs", RECS);
+      if(d.master){ MST = d.master; sv("mst", MST); }
+      sv("lastSent", Date.now());
+    }while(Q.length);
+  }catch(e){ ok = false; }
+  busy = false;
+  drawSend();
+  if(manual) toast(ok ? "送信しました" : "送れませんでした（電波が届いていません）。記録はiPadに残っています");
+  if(!$("v-home").classList.contains("hide")) home();
+  if(!$("v-conf").classList.contains("hide")) renderConf();
+}
+/* 右上の「未送信◯件」：古いものが30日を超えたら赤 */
+function drawSend(msg){
+  const b = $("sendBtn"), n = Q.length, last = ld("lastSent", 0);
+  const old = Q.reduce((m, a) => { const d = a.rec ? a.rec.date : (a.at || "").slice(0, 10); return d && d < m ? d : m; }, "9999");
+  const days = old < "9999" ? Math.floor((new Date(ymd()) - new Date(old)) / 864e5) : 0;
+  b.className = n ? (days >= 30 ? "send red" : "send org") : "send";
+  b.textContent = msg || (n ? `未送信 ${n}件　押すと送信` : "送信済み") + (last ? `（最終 ${new Date(last).getMonth() + 1}/${new Date(last).getDate()}）` : "");
+}
+
+const tick = () => { const d = new Date(); $("clock").textContent = (d.getMonth() + 1) + "/" + d.getDate() + " " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+tick(); setInterval(tick, 1000);
+home(); drawSend();
+phLoad().then(() => { if(!$("v-home").classList.contains("hide")) home(); sync(); });
+setInterval(() => sync(), 60000);   // 電波が入った瞬間に送る
+addEventListener("online", () => sync());
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

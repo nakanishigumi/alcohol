@@ -1,0 +1,16 @@
+{
+  "name": "アルコールチェック｜㈱中西組",
+  "short_name": "アルコールチェック",
+  "description": "運転前・運転後の酒気帯び確認の記録と、安全運転管理者の確認",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eff4f2",
+  "theme_color": "#1f6f5c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
