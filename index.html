@@ -56,6 +56,11 @@ header .clock{margin-left:12px}
 .grp{grid-column:1/-1;font-size:15px;font-weight:700;color:#14503f;margin-top:10px;border-bottom:2px solid #cfe0d9;padding-bottom:4px}
 .grp:first-child{margin-top:0}
 .grp.sub{color:#5f6368}
+header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17px;padding:9px 16px;margin-left:0}
+.names button{position:relative}
+.names button .role{position:absolute;top:6px;left:8px;font-size:12px;font-weight:700;background:#14503f;color:#fff;border-radius:6px;padding:1px 6px}
+.names button .wait{display:block;font-size:13px;font-weight:700;color:#e8710a;margin-top:4px}
+.teambtn{display:block;width:100%;margin-top:14px;border:2px solid #e8710a;background:#fff7e8;color:#8a4a00;border-radius:12px;padding:14px;font-size:18px;font-weight:700}
 .cam{position:relative;background:#14231f;border-radius:14px;overflow:hidden;height:210px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
 .cam video{height:100%;transform:scaleX(-1)}
 .cam span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:5px 10px;text-align:center}
@@ -107,8 +112,8 @@ header .clock{margin-left:12px}
 </head>
 <body>
 <header>
-  <h1>アルコールチェック</h1>
-  <div><button id="sendBtn" class="send" onclick="sync(true)"></button><span class="clock" id="clock"></span><button onclick="pickLeader()" id="leadBtn">班長確認</button><button onclick="openConf()" id="confBtn">確認者</button></div>
+  <div style="display:flex;align-items:center;gap:12px"><button id="backBtn" class="backtop hide" onclick="goBack()">← 戻る</button><h1>アルコールチェック</h1></div>
+  <div><button id="sendBtn" class="send" onclick="sync(true)"></button><span class="clock" id="clock"></span><button onclick="openConf()" id="confBtn">確認者</button></div>
 </header>
 
 <main>
@@ -125,6 +130,7 @@ header .clock{margin-left:12px}
       <div class="box">
         <div class="who" id="iName"></div>
         <div class="kind" id="iKind"></div>
+        <button class="teambtn hide" id="iTeam" onclick="openTeam(cur)"></button>
         <div class="lbl" id="lblVal">① チェッカーに出た数値</div>
         <div class="disp" id="iDisp" onclick="setStep(1)">0.00 <small>mg/L</small></div>
         <div class="lbl" id="lblCar">② 車のナンバー（4桁）</div>
@@ -242,7 +248,10 @@ const today = () => all().filter(r => r.date === ymd());
 const mine = n => today().filter(r => r.driver === n);
 const nextKind = n => { const m = mine(n); return m.some(r => r.kind === "前") && !m.some(r => r.kind === "後") ? "後" : "前"; };
 
-function show(v){ ["home", "inp", "fin", "conf", "key", "team", "lead"].forEach(x => $("v-" + x).classList.toggle("hide", x !== v)); window.scrollTo(0, 0); }
+let VIEW = "home";
+function show(v){ VIEW = v; ["home", "inp", "fin", "conf", "key", "team", "lead"].forEach(x => $("v-" + x).classList.toggle("hide", x !== v)); $("backBtn").classList.toggle("hide", v === "home"); window.scrollTo(0, 0); }
+/* 左上の「← 戻る」：ナンバー入力中なら数値入力へ、それ以外は名前の画面へ */
+function goBack(){ if(VIEW === "inp" && step === 2){ setStep(1); return; } home(); }
 
 /* ① 名前 */
 function home(){
@@ -250,20 +259,22 @@ function home(){
   const btn = n => {
     const m = mine(n), pre = m.find(r => r.kind === "前"), post = m.find(r => r.kind === "後");
     const st = r => !r ? "—" : (+r.value > 0 ? `<span class="ng">${r.at.slice(11)}✕</span>` : `<span class="ok">${r.at.slice(11)}✓</span>`);
-    return `<button onclick="pick('${esc(n)}')">${esc(n)}<small>前 ${st(pre)}　後 ${st(post)}</small></button>`;
+    const role = (MST.admins || []).includes(n) ? "管理者" : (MST.leaders || []).includes(n) ? "班長" : "";
+    const w = role ? team(n).length : 0;
+    return `<button onclick="pick('${esc(n)}')">${role ? `<span class="role">${role}</span>` : ""}${esc(n)}<small>前 ${st(pre)}　後 ${st(post)}</small>${w ? `<span class="wait">確認待ち ${w}人</span>` : ""}</button>`;
   };
   /* 課ごとに並べる。総務課は社用車を使うときだけなので一番下 */
-  const groups = [["工事課", ""], ["監理課", ""], ["", "その他"], ["総務課", "総務課（社用車を使うときだけ）"]];
-  const known = ["工事課", "監理課", "総務課"];
+  const groups = [["工事課", ""], ["監理課", ""], ["", "その他"], ["総務課", "総務課（社用車を使うときだけ）"], ["役員", "役員（社用車を運転するときだけ）"]];
+  const known = ["工事課", "監理課", "総務課", "役員"];
   $("names").innerHTML = groups.map(([g, label]) => {
     const l = MST.drivers.filter(n => g ? dept(n) === g : !known.includes(dept(n)));
     if(!l.length) return "";
-    return `<div class="grp ${g === "総務課" ? "sub" : ""}">${esc(label || g)}</div>` + l.map(btn).join("");
+    return `<div class="grp ${g === "総務課" || g === "役員" ? "sub" : ""}">${esc(label || g)}</div>` + l.map(btn).join("");
   }).join("");
   $("homeNote").textContent = MST.drivers.length ? "" : "名簿を読み込んでいます…（スプレッドシートの「名簿」シートA列に名前を書いてください）";
   const n = today().filter(r => !r.confirmer).length;
   $("confBtn").textContent = "確認者";
-  $("leadBtn").textContent = "班長確認" + (n ? `（${n}）` : "");
+
 }
 
 /* カメラ（前面） */
@@ -301,6 +312,9 @@ function pick(n){
   $("iName").textContent = n;
   $("iKind").textContent = nextKind(n) === "前" ? "運転前（出発前）" : "運転後（帰着後）";
   $("pad").innerHTML = ["1","2","3","4","5","6","7","8","9","0","00","消す"].map(k => `<button onclick="key('${k}')">${k}</button>`).join("");
+  const tl = leaders().includes(n) ? team(n).length : -1;
+  $("iTeam").classList.toggle("hide", tl < 0);
+  $("iTeam").textContent = tl > 0 ? `班員を確認する（${tl}人待ち）` : "班員を確認する（いまは待ちなし）";
   setStep(1);
   show("inp"); camOn();
   clearTimeout(window._idle); window._idle = setTimeout(home, 90000);   // 放置されたら名前の画面へ戻る
@@ -360,7 +374,7 @@ let TL = "", TSEL = {};
    監理課・総務課の人は管理者が直接確認するので、班長の一覧には出さない */
 const dept = n => (MST.dept || {})[n] || "";
 const isAdmin = n => (MST.admins || []).includes(n);
-const DIRECT = ["監理課", "総務課"];
+const DIRECT = ["監理課", "総務課", "役員"];
 const team = n => today().filter(r => !r.confirmer && r.driver !== n && (isAdmin(n) || !DIRECT.includes(dept(r.driver))));
 /* 前回この班長が確認した人（編成が同じならそのまま押すだけで済むよう、最初の印に使う） */
 function lastCrew(n){
@@ -370,7 +384,7 @@ function lastCrew(n){
   return new Set(mine.filter(r => r.date === d).map(r => r.driver));
 }
 function openTeam(n){
-  clearTimeout(FT);
+  clearTimeout(FT); camOff();
   TL = n; TSEL = {};
   const crew = lastCrew(n);
   // 前回の班員と、管理者なら監理課・総務課の人に最初から印
@@ -382,7 +396,7 @@ function drawTeam(){
   const l = team(TL);
   $("tTitle").textContent = isAdmin(TL) ? `${TL} さん（管理者）：目視確認する人を選ぶ` : `${TL} さん：今日の班員を選んで目視確認`;
   const done = new Set(today().filter(r => r.kind === "前").map(r => r.driver));
-  const yet = [...lastCrew(TL)].filter(d => d !== TL && !done.has(d) && dept(d) !== "総務課");
+  const yet = [...lastCrew(TL)].filter(d => d !== TL && !done.has(d) && dept(d) !== "総務課" && dept(d) !== "役員");
   $("tYet").innerHTML = yet.length ? `前回の班員でまだ記録していない人：<b>${yet.map(esc).join("、")}</b>` : "";
   $("tList").innerHTML = l.length ? l.map(r => {
     const st = TSEL[r.id] || "", hit = +r.value > 0;

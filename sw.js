@@ -1,5 +1,5 @@
 // アルコールチェックアプリ Service Worker（オフライン対応）
-const CACHE = "alc-v13";
+const CACHE = "alc-v14";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => {
   // 1件ずつ入れる（1ファイルの失敗で全部のキャッシュが作られない事故を防ぐ）
