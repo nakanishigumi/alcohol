@@ -34,9 +34,19 @@ h2{font-size:22px;margin-bottom:14px;color:#14503f}
 .disp.on{border-color:#7dffb0}
 .disp.plate{color:#fff;letter-spacing:.3em;text-align:center}
 .disp.plate .ph{color:#456}
-.carhit{min-height:24px;margin-top:8px;font-size:16px;line-height:1.5;color:#14503f}
-.carhit.warn{color:#b3261e;font-weight:700}
-.carhit.unk{color:#8a5a00}
+.carhit{min-height:40px;margin-top:10px;font-size:26px;font-weight:700;line-height:1.45;color:#14503f;background:#e3f1ec;border-radius:12px;padding:10px 16px}
+.carhit:empty{background:none;padding:0}
+.carhit.warn{color:#b3261e;background:#fde8e6;border:3px solid #b3261e}
+.carhit .wline{display:block;font-size:28px;margin-top:4px}
+#lw{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
+#lw.on{display:flex}
+#lw .box{background:#fff;border-radius:18px;padding:28px 30px;width:min(560px,90vw);text-align:center;border:5px solid #b3261e}
+#lw b{display:block;font-size:30px;color:#b3261e;margin-bottom:10px}
+#lw p{font-size:21px;line-height:1.5;margin:0 0 20px}
+#lw button{display:block;width:100%;font-size:22px;font-weight:700;border-radius:12px;padding:16px;margin-top:10px;border:0}
+#lw .stop{background:#b3261e;color:#fff}
+#lw .go{background:#e9eeec;color:#333}
+.carhit.unk{color:#8a5a00;background:#fff4dc;font-size:22px}
 .lbl.on{color:#14503f;font-weight:700}
 .seg2{display:flex;gap:8px;margin-bottom:10px}
 .seg2 button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 4px;font-size:16px;font-weight:700;color:#5f6368}
@@ -64,7 +74,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 .names button .role{position:absolute;top:6px;left:8px;font-size:12px;font-weight:700;background:#14503f;color:#fff;border-radius:6px;padding:1px 6px}
 .names button .wait{display:block;font-size:13px;font-weight:700;color:#e8710a;margin-top:4px}
 .teambtn{display:block;width:100%;margin-top:14px;border:2px solid #e8710a;background:#fff7e8;color:#8a4a00;border-radius:12px;padding:14px;font-size:18px;font-weight:700}
-.names button .lic{display:block;font-size:12px;font-weight:normal;color:#14503f;background:#e3f1ec;border-radius:6px;padding:1px 6px;margin:4px auto 0;width:fit-content}
+.names button .lic{display:block;font-size:17px;font-weight:700;color:#14503f;background:#e3f1ec;border-radius:6px;padding:3px 10px;margin:6px auto 0;width:fit-content}
 .cam{position:relative;background:#14231f;border-radius:14px;overflow:hidden;height:210px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
 .cam video{height:100%;transform:scaleX(-1)}
 .cam span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:5px 10px;text-align:center}
@@ -198,6 +208,9 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 </main>
 <div id="printArea"></div>
 <div id="toast"></div>
+<div id="lw"><div class="box"><b>⚠ 免許の確認</b><p id="lwMsg"></p>
+  <button class="stop" onclick="$('lw').classList.remove('on')">運転しない（入力に戻る）</button>
+  <button class="go" onclick="$('lw').classList.remove('on');record()">確認したので記録する</button></div></div>
 
 <script>
 "use strict";
@@ -365,7 +378,7 @@ function drawCar(){
   const c = hs[0], k = licOk(cur, c);
   if(k && !k.ok){
     el.className = "carhit warn";
-    el.textContent = c.no + " " + c.name + "　⚠ " + (k.none ? "運転免許の登録がありません" : k.at ? "この車はMT車です（AT限定免許）" : "この車は" + carNeed(c) + "免許が必要です（名簿の免許：" + MST.licCls[cur] + "）");
+    el.innerHTML = esc(c.no + " " + c.name) + `<span class="wline">⚠ ${esc(k.none ? "運転免許の登録がありません" : k.at ? "この車はMT車です（AT限定免許）" : "この車は" + carNeed(c) + "免許が必要です（名簿の免許：" + MST.licCls[cur] + "）")}</span>`;
   }else el.textContent = c.no + " " + c.name;
 }
 function draw(){
@@ -382,6 +395,10 @@ function draw(){
 function goNext(){
   if(step === 1){ setStep(2); return; }
   if(plate.length < 1){ toast("車のナンバー（4桁）を入れてください"); return; }
+  if($("iCar").classList.contains("warn")){   // 免許が足りない・免許なしのときは、記録の前に必ず止めて見せる
+    $("lwMsg").textContent = (($("iCar").querySelector(".wline") || $("iCar")).textContent || "").replace(/^⚠\s*/, "") + "。運転する前に安全運転管理者に確認してください。";
+    $("lw").classList.add("on"); return;
+  }
   record();
 }
 function record(){
