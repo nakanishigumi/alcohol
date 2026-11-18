@@ -363,9 +363,9 @@ function carsOf(p){ const k = String(Number(p || "0")), l = (MST.cars || []).fil
 function licOk(n, c){
   if(((MST.licCls || {})[n] || "").trim() === "免許なし") return {ok: false, none: true};
   const r = LIC_RANK.indexOf(((MST.licCls || {})[n] || "").trim());
-  if(r < 0 || !c.gvw) return null;
+  if(r < 0 || (!c.gvw && !c.load)) return null;   // 総重量が空でも積載量が分かれば積載量だけで判定する
   const at = (MST.licAt || {})[n] && c.mt === "MT";
-  return {ok: c.gvw < LIC_LIM[r][0] && c.load < LIC_LIM[r][1] && !at, at};
+  return {ok: (c.gvw || 0) < LIC_LIM[r][0] && c.load < LIC_LIM[r][1] && !at, at};
 }
 function carNeed(c){ for(let i = 0; i < LIC_LIM.length; i++) if(c.gvw < LIC_LIM[i][0] && c.load < LIC_LIM[i][1]) return LIC_RANK[i]; return ""; }
 function drawCar(){
