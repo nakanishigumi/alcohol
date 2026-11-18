@@ -34,6 +34,9 @@ h2{font-size:22px;margin-bottom:14px;color:#14503f}
 .disp.on{border-color:#7dffb0}
 .disp.plate{color:#fff;letter-spacing:.3em;text-align:center}
 .disp.plate .ph{color:#456}
+.carhit{min-height:24px;margin-top:8px;font-size:16px;line-height:1.5;color:#14503f}
+.carhit.warn{color:#b3261e;font-weight:700}
+.carhit.unk{color:#8a5a00}
 .lbl.on{color:#14503f;font-weight:700}
 .seg2{display:flex;gap:8px;margin-bottom:10px}
 .seg2 button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 4px;font-size:16px;font-weight:700;color:#5f6368}
@@ -61,6 +64,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 .names button .role{position:absolute;top:6px;left:8px;font-size:12px;font-weight:700;background:#14503f;color:#fff;border-radius:6px;padding:1px 6px}
 .names button .wait{display:block;font-size:13px;font-weight:700;color:#e8710a;margin-top:4px}
 .teambtn{display:block;width:100%;margin-top:14px;border:2px solid #e8710a;background:#fff7e8;color:#8a4a00;border-radius:12px;padding:14px;font-size:18px;font-weight:700}
+.names button .lic{display:block;font-size:12px;font-weight:normal;color:#14503f;background:#e3f1ec;border-radius:6px;padding:1px 6px;margin:4px auto 0;width:fit-content}
 .cam{position:relative;background:#14231f;border-radius:14px;overflow:hidden;height:210px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
 .cam video{height:100%;transform:scaleX(-1)}
 .cam span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:5px 10px;text-align:center}
@@ -135,6 +139,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
         <div class="disp" id="iDisp" onclick="setStep(1)">0.00 <small>mg/L</small></div>
         <div class="lbl" id="lblCar">② 車のナンバー（4桁）</div>
         <div class="disp plate" id="iPlate" onclick="setStep(2)"></div>
+        <div class="carhit" id="iCar"></div>
         <button class="back" onclick="home()">やめる（名前の画面に戻る）</button>
       </div>
       <div class="box">
@@ -255,13 +260,13 @@ function goBack(){ if(VIEW === "inp" && step === 2){ setStep(1); return; } home(
 
 /* ① 名前 */
 function home(){
-  cur = null; show("home"); camOff();
+  cur = null; show("home"); camLater();
   const btn = n => {
     const m = mine(n), pre = m.find(r => r.kind === "前"), post = m.find(r => r.kind === "後");
     const st = r => !r ? "—" : (+r.value > 0 ? `<span class="ng">${r.at.slice(11)}✕</span>` : `<span class="ok">${r.at.slice(11)}✓</span>`);
     const role = (MST.admins || []).includes(n) ? "管理者" : (MST.leaders || []).includes(n) ? "班長" : "";
     const w = role ? team(n).length : 0;
-    return `<button onclick="pick('${esc(n)}')">${role ? `<span class="role">${role}</span>` : ""}${esc(n)}<small>前 ${st(pre)}　後 ${st(post)}</small>${w ? `<span class="wait">確認待ち ${w}人</span>` : ""}</button>`;
+    return `<button onclick="pick('${esc(n)}')">${role ? `<span class="role">${role}</span>` : ""}${esc(n)}${(MST.lic || {})[n] ? `<span class="lic">${esc(MST.lic[n])}</span>` : ""}<small>前 ${st(pre)}　後 ${st(post)}</small>${w ? `<span class="wait">確認待ち ${w}人</span>` : ""}</button>`;
   };
   /* 課ごとに並べる。総務課は社用車を使うときだけなので一番下 */
   const groups = [["工事課", ""], ["監理課", ""], ["", "その他"], ["総務課", "総務課（社用車を使うときだけ）"], ["役員", "役員（社用車を運転するときだけ）"]];
@@ -280,6 +285,7 @@ function home(){
 /* カメラ（前面） */
 let STREAM = null;
 async function camOn(){
+  clearTimeout(window._camT);
   const box = $("cam").parentNode;
   try{
     if(!STREAM) STREAM = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user", width: {ideal: 640}, height: {ideal: 480}}, audio: false});
@@ -290,7 +296,10 @@ async function camOn(){
     $("camTip").textContent = "カメラが使えません（写真なしで記録されます）";
   }
 }
-function camOff(){ if(STREAM){ STREAM.getTracks().forEach(t => t.stop()); STREAM = null; } }
+function camOff(){ clearTimeout(window._camT); if(STREAM){ STREAM.getTracks().forEach(t => t.stop()); STREAM = null; } }
+/* カメラは止めずに使い回す（起動し直すたびにiPadが許可を聞き直すことがあるため）。3分だれも使わなければ止める */
+function camLater(){ clearTimeout(window._camT); window._camT = setTimeout(camOff, 180000); }
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden") camOff(); });
 function snap(){
   const v = $("cam");
   if(!STREAM || !v.videoWidth) return "";
@@ -333,11 +342,38 @@ function key(k){
   draw();
 }
 const num = () => (Number(val || "0") / 100);
+/* 会社の車の照合：ナンバー4桁（先頭の0は無視）で「車両」シートの一覧と突き合わせる */
+const LIC_RANK = ["普通", "準中型（5t限定）", "準中型", "中型（8t限定）", "中型", "大型"];
+const LIC_LIM = [[3500, 2000], [5000, 3000], [7500, 4500], [8000, 5000], [11000, 6500], [Infinity, Infinity]];
+function carsOf(p){ const k = String(Number(p || "0")), l = (MST.cars || []).filter(c => c.key === k); return p.length === 4 || (p.length === 3 && k.length === 3) ? l : []; }
+/* 運転者の免許でその車に乗れるか。分からないときは null（警告しない） */
+function licOk(n, c){
+  if(((MST.licCls || {})[n] || "").trim() === "免許なし") return {ok: false, none: true};
+  const r = LIC_RANK.indexOf(((MST.licCls || {})[n] || "").trim());
+  if(r < 0 || !c.gvw) return null;
+  const at = (MST.licAt || {})[n] && c.mt === "MT";
+  return {ok: c.gvw < LIC_LIM[r][0] && c.load < LIC_LIM[r][1] && !at, at};
+}
+function carNeed(c){ for(let i = 0; i < LIC_LIM.length; i++) if(c.gvw < LIC_LIM[i][0] && c.load < LIC_LIM[i][1]) return LIC_RANK[i]; return ""; }
+function drawCar(){
+  const el = $("iCar"); el.className = "carhit";
+  if(plate.length < 3 || !(MST.cars || []).length || (plate.length === 3 && !carsOf(plate).length)){ el.textContent = ""; return; }
+  const hs = carsOf(plate);
+  if(((MST.licCls || {})[cur] || "").trim() === "免許なし"){ el.className = "carhit warn"; el.textContent = "⚠ 運転免許の登録がありません（名簿の免許欄）"; return; }
+  if(!hs.length){ el.className = "carhit unk"; el.textContent = "会社の車の一覧にない番号です（レンタカー・私有車ならそのまま記録してください）"; return; }
+  if(hs.length > 1){ el.textContent = "同じ番号が" + hs.length + "台：" + hs.map(c => c.no + " " + c.name).join("／"); return; }
+  const c = hs[0], k = licOk(cur, c);
+  if(k && !k.ok){
+    el.className = "carhit warn";
+    el.textContent = c.no + " " + c.name + "　⚠ " + (k.none ? "運転免許の登録がありません" : k.at ? "この車はMT車です（AT限定免許）" : "この車は" + carNeed(c) + "免許が必要です（名簿の免許：" + MST.licCls[cur] + "）");
+  }else el.textContent = c.no + " " + c.name;
+}
 function draw(){
   const v = num(), hit = v > 0;
   $("iDisp").innerHTML = v.toFixed(2) + " <small>mg/L</small>";
   $("iDisp").classList.toggle("hit", hit);
   $("iPlate").innerHTML = plate ? plate : `<span class="ph">----</span>`;
+  drawCar();
   $("iDisp").classList.toggle("on", step === 1); $("lblVal").classList.toggle("on", step === 1);
   $("iPlate").classList.toggle("on", step === 2); $("lblCar").classList.toggle("on", step === 2);
   $("iGo").classList.toggle("hit", hit);
@@ -350,11 +386,11 @@ function goNext(){
 }
 function record(){
   if(!cur) return;
-  const v = num(), kind = nextKind(cur), car = plate, who = cur;
+  const hs = carsOf(plate), v = num(), kind = nextKind(cur), car = hs.length === 1 ? hs[0].no : plate, who = cur;
   const rec = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: ymd(), kind, at: now(), driver: who, car, value: v.toFixed(2), status: v > 0 ? "運転不可" : "確認待ち"};
   const ph = snap();
   if(ph){ rec.hasPh = 1; PH[rec.id] = ph; phPut(rec.id, {d: rec.date, img: ph}); }   // 送信待ちの記録には写真そのものは入れない
-  Q.push({action: "submit", rec}); svQ(); camOff();
+  Q.push({action: "submit", rec}); svQ(); camLater();
   clearTimeout(window._idle);
   $("fin").className = "fin" + (v > 0 ? " ng" : "");
   $("fin").innerHTML = v > 0
@@ -384,7 +420,7 @@ function lastCrew(n){
   return new Set(mine.filter(r => r.date === d).map(r => r.driver));
 }
 function openTeam(n){
-  clearTimeout(FT); camOff();
+  clearTimeout(FT); camLater();
   TL = n; TSEL = {};
   const crew = lastCrew(n);
   // 前回の班員と、管理者なら監理課・総務課の人に最初から印
