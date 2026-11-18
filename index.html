@@ -38,6 +38,25 @@ h2{font-size:22px;margin-bottom:14px;color:#14503f}
 .carhit:empty{background:none;padding:0}
 .carhit.warn{color:#b3261e;background:#fde8e6;border:3px solid #b3261e}
 .carhit .wline{display:block;font-size:28px;margin-top:4px}
+#ck{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:51}
+#ck.on{display:flex}
+#ck .box{background:#fff;border-radius:18px;padding:24px 30px;width:min(640px,92vw);border:5px solid #1e8e3e}
+#ck.ng .box{border-color:#c5221f}
+#ck h3{margin:0 0 14px;font-size:30px;text-align:center}
+#ck .row2{display:flex;gap:18px;align-items:center}
+#ck img{width:190px;border-radius:10px;flex:none;background:#ddd}
+#ck dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:baseline;flex:1}
+#ck dt{font-size:20px;color:#555}
+#ck dd{margin:0;font-size:28px;font-weight:800}
+#ck dd.v{font-size:44px;font-family:ui-monospace,monospace}
+#ck dd.v.hit{color:#c5221f}
+#ck dd small{display:block;font-size:19px;font-weight:600;color:#555}
+#ck dd .unk{color:#9a6100}
+#ck .btns{display:flex;gap:14px;margin-top:20px}
+#ck button{flex:1;font-size:24px;font-weight:800;border-radius:14px;padding:20px;border:0}
+#ck .fix{background:#e9eeec;color:#333;flex:.6}
+#ck .ok{background:#1e8e3e;color:#fff}
+#ck.ng .ok{background:#c5221f}
 #lw{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
 #lw.on{display:flex}
 #lw .box{background:#fff;border-radius:18px;padding:28px 30px;width:min(560px,90vw);text-align:center;border:5px solid #b3261e}
@@ -208,9 +227,12 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 </main>
 <div id="printArea"></div>
 <div id="toast"></div>
+<div id="ck"><div class="box"><h3>これで記録しますか？</h3>
+  <div class="row2"><img id="ckImg" alt=""><dl id="ckDl"></dl></div>
+  <div class="btns"><button class="fix" onclick="ckClose()">直す</button><button class="ok" id="ckGo" onclick="ckGo()">これで記録する</button></div></div></div>
 <div id="lw"><div class="box"><b>⚠ 免許の確認</b><p id="lwMsg"></p>
   <button class="stop" onclick="$('lw').classList.remove('on')">運転しない（入力に戻る）</button>
-  <button class="go" onclick="$('lw').classList.remove('on');record()">確認したので記録する</button></div></div>
+  <button class="go" onclick="$('lw').classList.remove('on');ckOpen()">確認したので記録する</button></div></div>
 
 <script>
 "use strict";
@@ -274,6 +296,7 @@ function goBack(){ if(VIEW === "inp" && step === 2){ setStep(1); return; } home(
 /* ① 名前 */
 function home(){
   cur = null; show("home"); camLater();
+  $("ck").classList.remove("on"); $("lw").classList.remove("on");
   const btn = n => {
     const m = mine(n), pre = m.find(r => r.kind === "前"), post = m.find(r => r.kind === "後");
     const st = r => !r ? "—" : (+r.value > 0 ? `<span class="ng">${r.at.slice(11)}✕</span>` : `<span class="ok">${r.at.slice(11)}✓</span>`);
@@ -399,13 +422,32 @@ function goNext(){
     $("lwMsg").textContent = (($("iCar").querySelector(".wline") || $("iCar")).textContent || "").replace(/^⚠\s*/, "") + "。運転する前に安全運転管理者に確認してください。";
     $("lw").classList.add("on"); return;
   }
-  record();
+  ckOpen();
 }
-function record(){
+/* 記録の前の確認（打ち間違い防止）：名前・数値・車を大きく見せ、もう一度押してもらう。写真はこの時に撮って一緒に見せる */
+let CKPH = "";
+function ckOpen(){
+  if(!cur) return;
+  const hs = carsOf(plate), v = num(), kind = nextKind(cur);
+  CKPH = snap();
+  $("ckImg").src = CKPH || ""; $("ckImg").style.display = CKPH ? "" : "none";
+  const car = hs.length === 1 ? `${esc(hs[0].no)}<small>${esc(hs[0].name)}</small>`
+    : hs.length > 1 ? `${esc(plate)}<small>同じ番号が${hs.length}台</small>`
+    : `${esc(plate)}<small class="unk">会社の車の一覧にない番号</small>`;
+  $("ckDl").innerHTML = `<dt>名前</dt><dd>${esc(cur)}<small>${kind === "前" ? "運転前" : "運転後"}</small></dd>`
+    + `<dt>数字</dt><dd class="v ${v > 0 ? "hit" : ""}">${v.toFixed(2)} <small style="display:inline">mg/L</small></dd>`
+    + `<dt>車</dt><dd>${car}${$("iCar").classList.contains("warn") ? `<small style="color:#c5221f">⚠ あなたの免許では乗れない車</small>` : ""}</dd>`;
+  $("ck").classList.toggle("ng", v > 0 || $("iCar").classList.contains("warn"));
+  $("ckGo").textContent = v > 0 ? "記録する（運転しない）" : "これで記録する";
+  $("ck").classList.add("on");
+}
+function ckClose(){ $("ck").classList.remove("on"); CKPH = ""; }
+function ckGo(){ $("ck").classList.remove("on"); record(CKPH); CKPH = ""; }
+function record(pre){
   if(!cur) return;
   const hs = carsOf(plate), v = num(), kind = nextKind(cur), car = hs.length === 1 ? hs[0].no : plate, who = cur;
   const rec = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: ymd(), kind, at: now(), driver: who, car, value: v.toFixed(2), status: v > 0 ? "運転不可" : "確認待ち"};
-  const ph = snap();
+  const ph = pre || snap();
   if(ph){ rec.hasPh = 1; PH[rec.id] = ph; phPut(rec.id, {d: rec.date, img: ph}); }   // 送信待ちの記録には写真そのものは入れない
   Q.push({action: "submit", rec}); svQ(); camLater();
   clearTimeout(window._idle);
