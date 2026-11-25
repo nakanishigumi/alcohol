@@ -26,6 +26,25 @@ h2{font-size:22px;margin-bottom:14px;color:#14503f}
 /* 入力画面 */
 .inp{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
 @media (max-width:760px){.inp{grid-template-columns:1fr}}
+/* 個人のスマホ（幅の狭い画面）：上の帯を2段にして詰める */
+@media (max-width:600px){
+  header{flex-wrap:wrap;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px}
+  header h1{font-size:18px;white-space:nowrap}
+  header>div:last-child{width:100%;display:flex;align-items:center;justify-content:space-between}
+  header button{margin-left:0;padding:8px 12px;font-size:14px}
+  header .clock{font-size:15px;margin-left:0}
+  header button.backtop{font-size:15px;padding:7px 12px}
+  main{padding-left:12px!important;padding-right:12px!important}
+  /* 入力の画面は1枚にまとめ、数字・ナンバー・ボタンが1画面に収まるように並べ替える */
+  .inp{display:flex;flex-direction:column;align-items:stretch;gap:6px;background:#fff;border-radius:18px;padding:14px}
+  .inp .box{display:contents}
+  #iName{order:1;font-size:24px}#iKind{order:2}#iTeam{order:3}
+  #lblVal{order:4}#iDisp{order:5}#lblCar{order:6}#iPlate{order:7}#iCar{order:8}
+  .inp .cam{order:9;height:120px;margin:4px 0}
+  #pad{order:10;margin-top:4px;gap:8px}#pad button{font-size:26px;padding:9px 0}
+  #iGo{order:11}.inp .back{order:12}
+  .disp{font-size:44px!important;padding:6px 14px!important}
+}
 .box{background:#fff;border-radius:18px;padding:20px}
 .who{font-size:30px;font-weight:800}
 .kind{display:inline-block;margin-top:8px;background:#e3f1ec;color:#14503f;border-radius:10px;padding:6px 14px;font-size:20px;font-weight:700}
@@ -84,6 +103,15 @@ h2{font-size:22px;margin-bottom:14px;color:#14503f}
 header button.send{background:rgba(255,255,255,.18)}
 header button.send.org{background:#e8710a}
 header button.send.red{background:#c5221f}
+.reg .code{font-family:ui-monospace,monospace;font-size:30px;font-weight:800;letter-spacing:2px;color:#14503f;background:#eef5f1;border-radius:10px;padding:8px 14px;display:inline-block}
+.reg input{width:100%;padding:14px;font-size:20px;border:1px solid #cfd9d5;border-radius:10px;-webkit-user-select:text;user-select:text;margin-bottom:10px}
+.reg .stbox{border-radius:12px;padding:12px 16px;margin:6px 0 14px;font-size:17px;line-height:1.5}
+.reg .stbox.wait{background:#fff4e0;border:2px solid #e8710a}.reg .stbox.ok{background:#e6f4ea;border:2px solid #1e8e3e}.reg .stbox.ng{background:#fdecea;border:2px solid #c5221f}
+.reg details{margin-top:18px;color:#5f6368}.reg summary{cursor:pointer;font-size:15px}
+.devs h3{margin:22px 0 8px;font-size:19px}
+.devs .it .nm small b{color:#14503f}
+.devs .it button.ok2{border-color:#1e8e3e;color:#1e8e3e}
+.devs .it.pend{background:#fff4e0}.devs .it.off{opacity:.6}
 header .clock{margin-left:12px}
 .grp{grid-column:1/-1;font-size:15px;font-weight:700;color:#14503f;margin-top:10px;border-bottom:2px solid #cfe0d9;padding-bottom:4px}
 .grp:first-child{margin-top:0}
@@ -200,13 +228,23 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
     <button class="back" onclick="home()">戻る</button>
   </section>
 
-  <!-- 端末の合言葉（管理者が1回だけ入れる） -->
+  <!-- この端末を使えるようにする（認証端末の申請。共通の合言葉でも入れる） -->
   <section id="v-dk" class="hide">
-    <div class="box" style="max-width:460px;margin:30px auto">
-      <h2>端末の合言葉</h2>
-      <p class="note">管理者が1回だけ入れます。入れるまで記録はこの端末にたまり、消えません。</p>
-      <input id="dkIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:100%;padding:14px;font-size:22px;border:1px solid #cfd9d5;border-radius:10px;-webkit-user-select:text;user-select:text" onkeydown="if(event.key==='Enter')dkOk()">
-      <button class="go" onclick="dkOk()">保存して送信</button>
+    <div class="box reg" style="max-width:520px;margin:24px auto">
+      <h2>この端末を使えるようにする</h2>
+      <div id="regSt"></div>
+      <div id="regForm">
+        <div class="lbl">端末の名前</div>
+        <input id="regName" type="text" maxlength="30" autocomplete="off" placeholder="例：玄関iPad／山田さんのスマホ">
+        <div class="lbl">使う人・置き場所</div>
+        <input id="regWho" type="text" maxlength="30" autocomplete="off" placeholder="例：工事課 山田／第2車庫">
+        <button class="go" id="regGo" onclick="regSend()">申請する</button>
+      </div>
+      <p class="note">申請すると、管理者が別の端末の「確認者」の画面で承認します。承認されるまでも記録は付けられ、この端末の中にたまります（消えません）。</p>
+      <details><summary>共通の合言葉で入る（今までの玄関iPad用）</summary>
+        <input id="dkIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:10px" onkeydown="if(event.key==='Enter')dkOk()">
+        <button class="back" onclick="dkOk()">合言葉を保存して送信</button>
+      </details>
       <button class="back" onclick="home()">戻る</button>
     </div>
   </section>
@@ -232,6 +270,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
     </div>
     <button class="go" id="cAll" onclick="confirmAll()">目視確認 異常なし　まとめて確認</button>
     <button class="back" onclick="printMonth()">今月の記録簿を印刷・PDF</button>
+    <div class="devs list" id="dList"></div>
     <button class="back" onclick="home()">名前の画面に戻る</button>
     <p class="note">班長が確認できなかった人（班長本人の分を含む）を、安全運転管理者が確認する画面です。電話で声の調子を確かめて数値を聞いてから、方法を「電話」にして確認してください。運転させない人は先に「止める」を押します。</p>
   </section>
@@ -257,6 +296,14 @@ let cur = null, val = "", KEY = "", keyTimer = null;
 /* 端末の合言葉：この端末が会社のものだと同期サーバに示す。管理者が1回だけ入れる（このファイルには書かない） */
 const dkNorm = k => String(k || "").replace(/[\s\-]/g, "").toLowerCase();
 let DK = dkNorm(ld("dk", "")), dkBad = false;
+/* 認証端末：この端末だけの番号（DID）と鍵（DS）。端末の中で作り、鍵はサーバには形を変えたものしか残らない */
+const rhex = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => x.toString(16).padStart(2, "0")).join(""); };
+let DID = ld("did", ""), DS = ld("ds", "");
+if(!/^[0-9a-f]{16}$/.test(DID) || !/^[0-9a-f]{32}$/.test(DS)){ DID = rhex(8); DS = rhex(16); sv("did", DID); sv("ds", DS); }
+let DEVST = ld("devst", "");   // ""＝未登録／"pending"＝承認待ち／"ok"＝使用可／"stopped"＝止められた
+let DEVS = [];                  // 確認者の画面に出す端末の一覧
+const devCode = id => String(id || "").slice(0, 8).replace(/(.{4})(.{4})/, "$1-$2");
+const setDev = v => { DEVST = v; sv("devst", v); };
 (() => { const m = location.hash.match(/[#&]k=([^&]+)/); if(m){ DK = dkNorm(decodeURIComponent(m[1])); sv("dk", DK); history.replaceState(null, "", location.pathname + location.search); } })();
 const STOP = new Set();
 /* 顔写真は容量の大きい IndexedDB に置く（ひと月分ためても収まるように）。画面に出すのは当日分だけ */
@@ -327,7 +374,9 @@ function home(){
     if(!l.length) return "";
     return `<div class="grp ${g === "総務課" || g === "役員" ? "sub" : ""}">${esc(label || g)}</div>` + l.map(btn).join("");
   }).join("");
-  $("homeNote").textContent = MST.drivers.length ? "" : "名簿を読み込んでいます…（スプレッドシートの「名簿」シートA列に名前を書いてください）";
+  $("homeNote").textContent = MST.drivers.length ? ""
+    : (SYNC_URL && !(DK && !dkBad) && DEVST !== "ok") ? (DEVST === "pending" ? "この端末は管理者の承認待ちです。承認されると名前が並びます。" : "この端末はまだ使えません。右上のボタンから申請してください。")
+    : "名簿を読み込んでいます…（スプレッドシートの「名簿」シートA列に名前を書いてください）";
   const n = today().filter(r => !r.confirmer).length;
   $("confBtn").textContent = "確認者";
 
@@ -393,6 +442,15 @@ function key(k){
   draw();
 }
 const num = () => (Number(val || "0") / 100);
+/* PCのキーボードでも入れられるように：数字・BackSpace・Enter（入力の画面のときだけ） */
+document.addEventListener("keydown", ev => {
+  if(VIEW !== "inp" || ev.ctrlKey || ev.metaKey || ev.altKey || /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) return;
+  if($("ck").classList.contains("on")){ if(ev.key === "Enter"){ ev.preventDefault(); ckGo(); } else if(ev.key === "Escape") ckClose(); return; }
+  if($("lw").classList.contains("on")) return;
+  if(/^[0-9]$/.test(ev.key)){ ev.preventDefault(); key(ev.key); }
+  else if(ev.key === "Backspace"){ ev.preventDefault(); key("消す"); }
+  else if(ev.key === "Enter"){ ev.preventDefault(); goNext(); }
+});
 /* 会社の車の照合：ナンバー4桁（先頭の0は無視）で「車両」シートの一覧と突き合わせる */
 const LIC_RANK = ["普通", "準中型（5t限定）", "準中型", "中型（8t限定）", "中型", "大型"];
 const LIC_LIM = [[3500, 2000], [5000, 3000], [7500, 4500], [8000, 5000], [11000, 6500], [Infinity, Infinity]];
@@ -541,9 +599,32 @@ function openConf(){
   clearTimeout(keyTimer); keyTimer = setTimeout(() => { KEY = ""; if(!$("v-conf").classList.contains("hide")) home(); }, 300000);
   const cn = ld("confName", "");
   $("cName").innerHTML = ((MST.admins || []).length ? MST.admins : (MST.leaders || []).length ? MST.leaders : MST.drivers).map(n => `<option${n === cn ? " selected" : ""}>${esc(n)}</option>`).join("");
-  renderConf(); show("conf");
+  renderConf(); show("conf"); sync();   // 端末の一覧を取り寄せる
 }
-function dkOpen(){ $("dkIn").value = ""; show("dk"); setTimeout(() => $("dkIn").focus(), 100); }
+function dkOpen(){
+  $("dkIn").value = "";
+  const c = `照合番号 <span class="code">${devCode(DID)}</span>`;
+  $("regSt").innerHTML = DEVST === "pending" ? `<div class="stbox wait">申請済みです。管理者の承認を待っています。<br>${c}<br><small>管理者には、確認者の画面で同じ番号の端末を承認してもらってください。</small></div>`
+    : DEVST === "stopped" ? `<div class="stbox ng">この端末は管理者に止められています。使うときは管理者に相談してください。<br>${c}</div>`
+    : DEVST === "ok" ? `<div class="stbox ok">この端末は承認済みです。<br>${c}</div>`
+    : (DK && dkBad) ? `<div class="stbox ng">共通の合言葉が通りません。この端末を申請してください。</div>` : "";
+  $("regForm").classList.toggle("hide", DEVST === "ok" || DEVST === "stopped");
+  $("regGo").textContent = DEVST === "pending" ? "名前を直して申請し直す" : "申請する";
+  $("regName").value = ld("devName", ""); $("regWho").value = ld("devWho", "");
+  show("dk");
+}
+async function regSend(){
+  const name = $("regName").value.trim(), who = $("regWho").value.trim();
+  if(!name){ toast("端末の名前を入れてください"); return; }
+  sv("devName", name); sv("devWho", who);
+  try{
+    const tx = await (await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({req: {did: DID, ds: DS, name, who}})})).text();
+    if(/DEVICE_OK/.test(tx)) setDev("ok"); else if(/DEVICE_STOPPED/.test(tx)) setDev("stopped"); else if(/DEVICE_PENDING/.test(tx)) setDev("pending");
+    else { toast("申請を受け付けてもらえませんでした。管理者に相談してください"); return; }
+    toast(DEVST === "pending" ? "申請しました。管理者の承認を待っています" : "この端末は承認済みです");
+    dkOpen(); drawSend(); if(DEVST === "ok") sync();
+  }catch(e){ toast("送れませんでした（電波が届いていません）。電波のある所でもう一度押してください"); }
+}
 function dkOk(){
   const k = dkNorm($("dkIn").value); if(!k){ toast("端末の合言葉を入れてください"); return; }
   DK = k; sv("dk", DK); dkBad = false; home(); sync(true);
@@ -562,6 +643,7 @@ function renderConf(){
     : `<p class="note">今日の確認待ちはありません</p>`;
   $("cAll").classList.toggle("hide", !l.length);
   loadFaces(l);
+  renderDevs();
 }
 /* 別の端末で記録された分の写真は、確認キーを付けて同期サーバから取り寄せる */
 const ASKED = new Set();
@@ -571,10 +653,29 @@ async function loadFaces(l){
     if(!r.photo || PH[r.id] || ASKED.has(r.id)) continue;
     ASKED.add(r.id);
     try{
-      const d = await (await fetch(SYNC_URL + "?photo=" + encodeURIComponent(r.id) + "&key=" + encodeURIComponent(KEY) + "&dk=" + encodeURIComponent(DK))).json();
+      const d = await (await fetch(SYNC_URL + "?photo=" + encodeURIComponent(r.id) + "&key=" + encodeURIComponent(KEY) + "&dk=" + encodeURIComponent(DK) + "&did=" + DID + "&ds=" + DS)).json();
       if(d.photo){ PH[r.id] = d.photo; if(!$("v-conf").classList.contains("hide")) renderConf(); }
     }catch(e){}
   }
+}
+/* 端末の承認・止める（確認キーを付けて送る。自分の端末は止められない） */
+function renderDevs(){
+  const ord = {"申請中": 0, "使用可": 1, "停止": 2}, l = DEVS.slice().sort((a, b) => (ord[a.st] ?? 3) - (ord[b.st] ?? 3));
+  const pend = Q.filter(a => /^dev/.test(a.action)).map(a => a.id);
+  $("dList").innerHTML = `<h3>端末（${l.filter(d => d.st === "使用可").length}台が使用中${l.some(d => d.st === "申請中") ? `・申請 ${l.filter(d => d.st === "申請中").length}件` : ""}）</h3>` + (l.length ? l.map(d => {
+    const me = d.id === DID, wait = pend.includes(d.id);
+    const sub = d.st === "申請中" ? `申請 ${esc(d.req)}　照合番号 <b>${devCode(d.id)}</b>` : d.st === "使用可" ? `承認 ${esc(d.ok)}（${esc(d.by)}）　最終通信 ${esc(d.seen || "—")}` : `止めています`;
+    const btn = wait ? `<span class="note">送信中…</span>`
+      : d.st === "申請中" ? `<button class="ok2" onclick="devDo('devok','${d.id}')">承認</button><button onclick="devDo('devdel','${d.id}')">断る</button>`
+      : d.st === "使用可" ? (me ? `<span class="note">この端末</span>` : `<button onclick="devDo('devstop','${d.id}')">止める</button>`)
+      : `<button class="ok2" onclick="devDo('devok','${d.id}')">使えるように戻す</button>`;
+    return `<div class="it ${d.st === "申請中" ? "pend" : d.st === "停止" ? "off" : ""}"><div class="nm">${esc(d.name)}<small>${esc(d.who)}${d.who ? "　" : ""}${sub}</small></div>${btn}</div>`;
+  }).join("") : `<p class="note">端末の一覧はまだありません（電波のある所で開くと出ます）</p>`);
+}
+function devDo(action, id){
+  if(!KEY) return;
+  Q.push({action, key: KEY, id, name: $("cName").value, at: now()}); svQ();
+  toast(action === "devok" ? "承認しました" : action === "devstop" ? "止めました" : "申請を断りました"); renderDevs(); sync();
 }
 function tog(id){ STOP.has(id) ? STOP.delete(id) : STOP.add(id); renderConf(); }
 function confirmAll(){
@@ -603,7 +704,8 @@ function printMonth(){
 let busy = false;
 async function sync(manual){
   if(!SYNC_URL || busy){ drawSend(); return; }
-  if(!DK || dkBad){ drawSend(); if(manual) dkOpen(); return; }   // 合言葉がまだ／違う間は送らない（記録は端末に残す）
+  const canSend = (DK && !dkBad) || DEVST === "ok" || DEVST === "pending" || (manual && DEVST === "stopped");   // 承認待ちの間も問い合わせる（承認されたらそのまま送れる）
+  if(!canSend){ drawSend(); if(manual) dkOpen(); return; }   // 未登録・止められた・合言葉が違う間は送らない（記録は端末に残す）
   busy = true; drawSend("送信中…");
   let ok = true;
   try{
@@ -614,9 +716,16 @@ async function sync(manual){
         if(a.action === "submit" && a.rec.hasPh){ const v = await phGet(a.rec.id); body.push(Object.assign({}, a, {rec: Object.assign({}, a.rec, {photo: v ? v.img : ""})})); }
         else body.push(a);
       }
-      const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK, actions: body})});
+      const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK && !dkBad ? DK : "", did: DID, ds: DS, key: KEY || undefined, actions: body})});
       const tx = await res.text();
-      let d; try{ d = JSON.parse(tx); }catch(e){ if(/DEVICE_KEY/.test(tx)) dkBad = true; throw e; }   // 合言葉が違うときは何も消さずに止まる
+      let d; try{ d = JSON.parse(tx); }catch(e){   // 断られたときは何も消さずに止まる
+        if(/DEVICE_PENDING/.test(tx)) setDev("pending");
+        else if(/DEVICE_STOPPED/.test(tx)) setDev("stopped");
+        else if(/DEVICE_KEY/.test(tx)){ if(DK && !dkBad) dkBad = true; else if(DEVST) setDev(""); }   // 合言葉が違う／申請が断られた
+        throw e;
+      }
+      if(!(DK && !dkBad)) setDev("ok");
+      if(d.devices){ DEVS = d.devices; }
       if(send.length){
         Q = Q.slice(send.length); svQ();
         for(const a of send) if(a.action === "submit" && a.rec.date !== ymd()) phDel(a.rec.id);   // 送った古い写真は端末から消す
@@ -629,7 +738,7 @@ async function sync(manual){
   }catch(e){ ok = false; }
   busy = false;
   drawSend();
-  if(manual && dkBad){ toast("端末の合言葉が違います。記録はiPadに残っています"); dkOpen(); return; }
+  if(manual && !ok && !((DK && !dkBad) || DEVST === "ok")){ toast(DEVST === "pending" ? "まだ承認されていません。記録は端末に残っています" : DEVST === "stopped" ? "この端末は止められています。記録は端末に残っています" : "この端末はまだ使えません。記録は端末に残っています"); dkOpen(); return; }
   if(manual) toast(ok ? "送信しました" : "送れませんでした（電波が届いていません）。記録はiPadに残っています");
   if(!$("v-home").classList.contains("hide")) home();
   if(!$("v-conf").classList.contains("hide")) renderConf();
@@ -639,7 +748,11 @@ function drawSend(msg){
   const b = $("sendBtn"), n = Q.length, last = ld("lastSent", 0);
   const old = Q.reduce((m, a) => { const d = a.rec ? a.rec.date : (a.at || "").slice(0, 10); return d && d < m ? d : m; }, "9999");
   const days = old < "9999" ? Math.floor((new Date(ymd()) - new Date(old)) / 864e5) : 0;
-  if(SYNC_URL && (!DK || dkBad) && !msg){ b.className = "send red"; b.textContent = (dkBad ? "⚠ 端末の合言葉が違います" : "⚠ 端末の合言葉が未設定") + (n ? `（未送信 ${n}件）` : ""); return; }
+  if(SYNC_URL && !(DK && !dkBad) && DEVST !== "ok" && !msg){
+    const t = n ? `（未送信 ${n}件）` : "";
+    if(DEVST === "pending"){ b.className = "send org"; b.textContent = "⏳ 端末の承認待ち" + t; return; }
+    b.className = "send red"; b.textContent = (DEVST === "stopped" ? "⚠ この端末は止められています" : "⚠ この端末は未登録（押して申請）") + t; return;
+  }
   b.className = n ? (days >= 30 ? "send red" : "send org") : "send";
   b.textContent = msg || (n ? `未送信 ${n}件　押すと送信` : "送信済み") + (last ? `（最終 ${new Date(last).getMonth() + 1}/${new Date(last).getDate()}）` : "");
 }
