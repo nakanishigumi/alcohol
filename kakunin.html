@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>アルコールチェック　直行直帰の確認</title>
+<style>
+body{margin:0;font-family:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",sans-serif;color:#1a1a1a;background:#f4f7f5}
+.w{max-width:520px;margin:0 auto;padding:14px}
+.hd{background:#1f6f5c;color:#fff;padding:12px 14px;border-radius:12px;font-weight:bold;font-size:18px}
+.msg{font-weight:bold;color:#1f6f5c;font-size:17px;margin:12px 0 0}
+.err{font-size:18px;margin:20px 4px}
+.ph{margin-top:12px}.ph img{width:100%;border-radius:12px;display:block}
+.noimg{background:#e5e9e7;color:#777;padding:34px;text-align:center;border-radius:12px}
+.info{margin:12px 2px;font-size:18px;line-height:1.75}
+.info .nm{font-size:23px;font-weight:bold}
+.v{font-size:26px;font-weight:bold}
+.btn{display:block;width:100%;border:0;padding:17px;margin-top:10px;border-radius:12px;font-size:19px;font-weight:bold;color:#fff;font-family:inherit}
+.ok{background:#1e8e3e}.ng{background:#c5221f}.btn:disabled{opacity:.5}
+.done{background:#e6f4ea;border:2px solid #1e8e3e;border-radius:12px;padding:12px;font-size:17px;line-height:1.6;margin-top:6px}
+.done.bad{background:#fce8e6;border-color:#c5221f}
+.ft{color:#666;font-size:13px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="hd">アルコールチェック　直行直帰の確認</div>
+  <div id="main"><p class="err">読み込み中…</p></div>
+</div>
+<script>
+const SYNC_URL = "https://script.google.com/macros/s/AKfycbxfZmxR7Kk1uQP1cvAjaPv191fB5QU86kG37BXf5LRiNnDFbe2wWiFFHBxoU_nHFBzZ/exec";
+const q = new URLSearchParams(location.search);
+const C = q.get("c") || "", U = q.get("u") || "", T = q.get("t") || "";
+let IMG = "";
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function load(act){
+  if(!C || !U || !T){ draw({ok:false, msg:"このリンクは使えません。"}); return; }
+  const url = SYNC_URL + "?c=" + encodeURIComponent(C) + "&u=" + encodeURIComponent(U) + "&t=" + encodeURIComponent(T) + (act ? "&do=" + act : "");
+  try { const d = await (await fetch(url)).json(); if(d.img) IMG = d.img; draw(d); }
+  catch(e){ draw({ok:false, msg:"つながりませんでした。電波のよい所で、もう一度開いてください。"}); }
+}
+function go(act, b){
+  const t = act === "ok" ? "確認済みにします。よろしいですか？" : "「運転させない」にします。よろしいですか？";
+  if(!confirm(t)) return;
+  document.querySelectorAll(".btn").forEach(x => x.disabled = true);
+  b.textContent = "記録しています…";
+  load(act);
+}
+function draw(d){
+  const m = document.getElementById("main");
+  if(!d.ok){ m.innerHTML = `<p class="err">${esc(d.msg)}</p>`; return; }
+  const r = d.rec, hit = d.hit;
+  const img = IMG ? `<img src="${IMG}" alt="測ったときの写真">` : `<div class="noimg">写真なし</div>`;
+  const done = r.by
+    ? `<div class="done${r.st === "運転不可" ? " bad" : ""}"><b>${esc(r.st)}</b>　確認者 ${esc(r.by)}<br>${esc(r.byAt)}・${esc(r.how)}</div>`
+    : (hit ? `<button class="btn ng" onclick="go('ng',this)">運転させない（確認した）</button>`
+           : `<button class="btn ok" onclick="go('ok',this)">顔と数字を見た・確認済みにする</button><button class="btn ng" onclick="go('ng',this)">運転させない</button>`);
+  m.innerHTML = (d.msg ? `<p class="msg">${esc(d.msg)}</p>` : "")
+    + `<div class="ph">${img}</div>`
+    + `<div class="info"><span class="nm">${esc(r.driver)} さん</span>　${esc(r.kind)}<br>${esc(r.at)}<br>数値 <span class="v" style="color:${hit ? "#c5221f" : "#1e8e3e"}">${esc(r.value)}</span> mg/L${hit ? `　<b style="color:#c5221f">酒気帯び あり</b>` : ""}<br>車 ${esc(r.car || "—")}</div>`
+    + done
+    + `<p class="ft">${esc(d.to)} さんあてのリンクです。ほかの人に送らないでください。</p>`;
+}
+load();
+</script>
+</body>
+</html>
