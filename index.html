@@ -116,7 +116,13 @@ header button.send.red{background:#c5221f}
 .reg .stbox{border-radius:12px;padding:12px 16px;margin:6px 0 14px;font-size:17px;line-height:1.5}
 .reg .stbox.wait{background:#fff4e0;border:2px solid #e8710a}.reg .stbox.ok{background:#e6f4ea;border:2px solid #1e8e3e}.reg .stbox.ng{background:#fdecea;border:2px solid #c5221f}
 .reg details{margin-top:18px;color:#5f6368}.reg summary{cursor:pointer;font-size:15px}
-.tabs{display:flex;gap:8px;margin:6px 0 14px}.tabs button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 4px;font-size:18px;font-weight:700;color:#5f6368}
+.wn{border-radius:12px;padding:10px 14px;margin-bottom:8px;font-size:16px;font-weight:700}.wn.red{background:#fce8e6;color:#a50e0e;border:2px solid #c5221f}.wn.org{background:#fff4e0;color:#8a4b00;border:2px solid #e8710a}
+.mh{margin:22px 0 8px;font-size:19px;color:#a50e0e}
+.adm .it .tg{flex:none;font-size:13px;border-radius:8px;padding:4px 8px;background:#eef5f1;color:#14503f}.adm .it .tg.red{background:#fce8e6;color:#a50e0e}
+.adm .srch{display:flex;gap:8px;margin-bottom:10px}.adm .srch input,.adm .srch select{flex:1;padding:12px;font-size:17px;border:1px solid #cfd9d5;border-radius:10px;background:#fff;-webkit-user-select:text;user-select:text}
+.adm .it.cx{opacity:.5;text-decoration:line-through}
+.fixlog{font-size:13px;color:#5f6368;line-height:1.6}
+.tabs{display:flex;gap:6px;margin:6px 0 14px}.tabs button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 2px;font-size:16px;font-weight:700;color:#5f6368}
 .tabs button.on{border-color:#14503f;background:#14503f;color:#fff}
 .adm .it{cursor:pointer}.adm .it .nm small{white-space:normal}.adm .it.out{opacity:.5}
 .adm .add{width:100%;border:2px dashed #1e8e3e;background:#fff;color:#1e8e3e;border-radius:14px;padding:14px;font-size:18px;font-weight:700;margin-bottom:10px}
@@ -288,6 +294,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 
   <!-- 確認者 -->
   <section id="v-conf" class="hide">
+    <div id="warnBox"></div>
     <h2>確認待ち（今日）</h2>
     <div class="list" id="cList"></div>
     <div class="row">
@@ -295,6 +302,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
       方法 <select id="cMethod"><option>対面</option><option>電話</option><option>ビデオ通話</option></select>
     </div>
     <button class="go" id="cAll" onclick="confirmAll()">目視確認 異常なし　まとめて確認</button>
+    <div class="list" id="mList"></div>
     <button class="back" onclick="printMonth()">今月の記録簿を印刷・PDF</button>
     <button class="back" onclick="admOpen()">社員・車両・設定</button>
     <div class="devs list" id="dList"></div>
@@ -305,7 +313,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 
   <!-- 社員・車両・設定 -->
   <section id="v-adm" class="hide">
-    <div class="tabs"><button id="tStaff" onclick="admTab('staff')">社員</button><button id="tCar" onclick="admTab('car')">車両</button><button id="tSet" onclick="admTab('set')">設定</button></div>
+    <div class="tabs"><button id="tRec" onclick="admTab('rec')">記録</button><button id="tStaff" onclick="admTab('staff')">社員</button><button id="tCar" onclick="admTab('car')">車両</button><button id="tDet" onclick="admTab('det')">検知器</button><button id="tSet" onclick="admTab('set')">設定</button></div>
     <div id="admBody"></div>
     <button class="back" onclick="openConf()">確認者の画面に戻る</button>
   </section>
@@ -376,7 +384,7 @@ const p2 = n => String(n).padStart(2, "0");
 const ymd = (d = new Date()) => d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
 const now = () => { const d = new Date(); return ymd(d) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2500); };
+const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), Math.min(8000, 2000 + String(m).length * 60)); };
 
 function all(){
   const ids = new Set(RECS.map(r => r.id));
@@ -509,7 +517,9 @@ function drawCar(){
   if(((MST.licCls || {})[cur] || "").trim() === "免許なし"){ el.className = "carhit warn"; el.textContent = "⚠ 運転免許の登録がありません（名簿の免許欄）"; return; }
   if(!hs.length){ el.className = "carhit unk"; el.textContent = "会社の車の一覧にない番号です（レンタカー・私有車ならそのまま記録してください）"; return; }
   if(hs.length > 1){ el.textContent = "同じ番号が" + hs.length + "台：" + hs.map(c => c.no + " " + c.name).join("／"); return; }
-  const c = hs[0], k = licOk(cur, c);
+  const c = hs[0], k = licOk(cur, c), le = (MST.licExp || {})[cur];
+  if(le && le < ymd()){ el.className = "carhit warn"; el.innerHTML = esc(c.no + " " + c.name) + `<span class="wline">⚠ 運転免許の有効期限が切れています（${esc(le)}）</span>`; return; }
+  if(c.exp && /^\d{4}-\d{2}-\d{2}$/.test(c.exp) && c.exp < ymd()){ el.className = "carhit warn"; el.innerHTML = esc(c.no + " " + c.name) + `<span class="wline">⚠ この車は車検が切れています（${esc(c.exp)}）</span>`; return; }
   if(k && !k.ok){
     el.className = "carhit warn";
     el.innerHTML = esc(c.no + " " + c.name) + `<span class="wline">⚠ ${esc(k.none ? "運転免許の登録がありません" : k.at ? "この車はMT車です（AT限定免許）" : "この車は" + carNeed(c) + "免許が必要です（名簿の免許：" + MST.licCls[cur] + "）")}</span>`;
@@ -672,7 +682,8 @@ function keyOk(){
   const k = $("kIn").value.trim(); if(!k){ toast("確認キーを入れてください"); return; }
   KEY = k; openConf();
 }
-const pend = () => today().filter(r => !r.confirmer);
+const pend = () => today().filter(r => !r.confirmer && r.status !== "取消");
+const missed = () => all().filter(r => r.date < ymd() && !r.confirmer && r.status !== "取消").sort((a, b) => a.at < b.at ? -1 : 1);   // 確認漏れ（前の日以前）
 function renderConf(){
   const l = pend();
   $("cList").innerHTML = l.length ? l.map(r => { const hit = +r.value > 0, stop = hit || STOP.has(r.id);
@@ -681,6 +692,10 @@ function renderConf(){
     <span class="v ${hit ? "hit" : ""}">${esc(r.value)}</span>${hit ? "" : `<button onclick="tog('${r.id}')">${stop ? "戻す" : "止める"}</button>`}</div>`; }).join("")
     : `<p class="note">今日の確認待ちはありません</p>`;
   $("cAll").classList.toggle("hide", !l.length);
+  const ms = missed();
+  $("mList").innerHTML = ms.length ? `<h3 class="mh">⚠ 確認漏れ（前の日より前）${ms.length}件</h3>` + ms.map(r => `<div class="it"><div class="nm">${esc(r.driver)}<small>${r.date.slice(5).replace("-", "/")} ${r.kind === "前" ? "運転前" : "運転後"} ${r.at.slice(11)}　ナンバー ${esc(r.car)}</small></div><span class="v ${+r.value > 0 ? "hit" : ""}">${esc(r.value)}</span></div>`).join("")
+    + `<button class="back" onclick="confirmMissed()">記録を見て、あとから確認したことにする（${ms.length}件）</button><p class="note">確認方法は「事後確認（確認漏れ）」で残ります。0.00でない記録は「運転不可」になります。</p>` : "";
+  $("warnBox").innerHTML = warns().map(w => `<div class="wn ${w.lv}">${esc(w.t)}</div>`).join("");
   loadFaces(l);
   renderDevs();
 }
@@ -722,45 +737,123 @@ function devDo(action, id, notify){
 }
 
 /* ===== 社員・車両・設定（確認キーが入っているときだけ） ===== */
-let ADM = null, ADT = "staff", ED = null;
+let ADM = null, ADT = "rec", ED = null;
 function admOpen(){ if(!KEY){ openConf(); return; } show("adm"); admTab(ADT); sync(); }
-function admTab(t){ ADT = t; ["Staff","Car","Set"].forEach(x => $("t" + x).classList.toggle("on", "t" + x === "t" + t[0].toUpperCase() + t.slice(1))); admDraw(); }
-function admBusy(){ return Q.some(a => /^(staff|car)(save|del)$|^set(key|to)$/.test(a.action)); }
+function admTab(t){ ADT = t; ["Rec","Staff","Car","Det","Set"].forEach(x => $("t" + x).classList.toggle("on", x.toLowerCase() === t)); admDraw(); }
+const ADM_ACT = /^(staff|car|det)(save|del)$|^set(key|to)$|^rec(fix|cancel)$|^detcheck$|^dk(renew|stop)$|^mailto$|^remake$|^notifytest$/;
+function admBusy(){ return Q.some(a => ADM_ACT.test(a.action)); }
 function admDraw(){
   const b = $("admBody");
   if(!ADM){ b.innerHTML = `<p class="note">読み込み中…（電波のある所で開いてください）</p>`; return; }
   const wait = admBusy() ? `<p class="note">送信中…</p>` : "";
-  if(ADT === "staff"){
+  if(ADT === "rec"){
+    const nm = (b.querySelector("#rqN") || {}).value || "", dy = (b.querySelector("#rqD") || {}).value || "";
+    const l = all().filter(r => (!nm || r.driver === nm) && (!dy || r.date === dy)).sort((x, y) => x.at < y.at ? 1 : -1).slice(0, 80);
+    const names = [...new Set(all().map(r => r.driver))].sort();
+    b.innerHTML = wait + `<div class="adm list"><div class="srch"><select id="rqN" onchange="admDraw()"><option value="">全員</option>${names.map(n => `<option${n === nm ? " selected" : ""}>${esc(n)}</option>`).join("")}</select><input id="rqD" type="date" value="${esc(dy)}" onchange="admDraw()"></div>
+      <p class="cnt">この40日の記録（新しい順・${l.length}件まで）。押すと、運転者・ナンバー・運転前後を直したり、取り消したりできます。測った数字と時刻は直せません。</p>`
+      + l.map(r => `<div class="it${r.status === "取消" ? " cx" : ""}" onclick="edRec('${esc(r.id)}')"><div class="nm">${esc(r.driver)}<small>${r.at.slice(5, 16).replace("-", "/")} ${r.kind === "前" ? "運転前" : "運転後"}　${esc(r.car)}　${esc(r.status || "")}${r.confirmer ? "（" + esc(r.confirmer) + "）" : ""}</small></div><span class="v ${+r.value > 0 ? "hit" : ""}">${esc(r.value)}</span></div>`).join("")
+      + `</div>` + (ADM.fixes.length ? `<div class="setbox"><h3>直した記録（新しい順）</h3><div class="fixlog">${ADM.fixes.map(f => `${esc(f[0])}　${esc(f[1])}：${esc(f[4])}さん ${esc(f[3].slice(5))} の${esc(f[5])}「${esc(f[6])}」→「${esc(f[7])}」（${esc(f[8])}）`).join("<br>")}</div></div>` : "");
+  } else if(ADT === "staff"){
     const l = ADM.staff.slice().sort((a, b) => (a.st === "退職") - (b.st === "退職"));
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edStaff(-1)">＋ 社員を追加</button>
       <p class="cnt">在籍 ${l.filter(x => x.st !== "退職").length}人${l.some(x => x.st === "退職") ? `・退職 ${l.filter(x => x.st === "退職").length}人` : ""}　（押すと直せます）</p>`
-      + l.map(x => `<div class="it${x.st === "退職" ? " out" : ""}" onclick="edStaff(${ADM.staff.indexOf(x)})"><div class="nm">${esc(x.name)}<small>${[x.role, x.dept, x.lic, x.mt, x.st === "退職" ? "退職" : ""].filter(Boolean).map(esc).join("・") || "（役割・課・免許なし）"}</small></div></div>`).join("") + `</div>`;
+      + l.map(x => `<div class="it${x.st === "退職" ? " out" : ""}" onclick="edStaff(${ADM.staff.indexOf(x)})"><div class="nm">${esc(x.name)}<small>${[x.role, x.dept, x.lic, x.mt, x.exp ? "免許 " + x.exp + "まで" : "", x.st === "退職" ? "退職" : ""].filter(Boolean).map(esc).join("・") || "（役割・課・免許なし）"}</small></div>${expTag(x.exp)}</div>`).join("") + `</div>`;
   } else if(ADT === "car"){
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edCar(-1)">＋ 車両を追加</button><p class="cnt">${ADM.cars.length}台　（押すと直せます）</p>`
-      + ADM.cars.map((r, i) => `<div class="it" onclick="edCar(${i})"><div class="nm">${esc(r[0])}<small>${[r[1], r[7] ? "必要な免許 " + r[7] : "", r[8], r[9] ? "車検 " + r[9] : ""].filter(Boolean).map(esc).join("・")}</small></div></div>`).join("") + `</div>`;
+      + ADM.cars.map((r, i) => `<div class="it" onclick="edCar(${i})"><div class="nm">${esc(r[0])}<small>${[r[1], r[7] ? "必要な免許 " + r[7] : "", r[8], r[9] ? "車検 " + r[9] : ""].filter(Boolean).map(esc).join("・")}</small></div>${expTag(r[9])}</div>`).join("") + `</div>`;
+  } else if(ADT === "det"){
+    b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edDet(-1)">＋ 検知器を追加</button>
+      <p class="cnt">${ADM.det.length}台。押すと直せます。「点検」で、壊れていないかの点検を記録します（電源が入る・ひびや汚れがない・正しく測れる）。</p>`
+      + ADM.det.map((d, i) => { const v = d.v, ls = d.last; return `<div class="it"><div class="nm" onclick="edDet(${i})">${esc(v[0])}<small>${[v[1], v[3], v[6], v[5] ? "交換の目安 " + v[5] : "", ls ? "最後の点検 " + ls[0] + "（" + ls[3] + "）" : "点検の記録なし"].filter(Boolean).map(esc).join("・")}</small></div>${expTag(v[5])}<button onclick="detCheck(${i})">点検</button></div>`; }).join("") + `</div>`;
   } else {
-    const to = Object.entries(ADM.to || {});
+    const to = Object.entries(ADM.to || {}), ym = ymd().slice(0, 7), d0 = new Date(); d0.setDate(0);
+    const pm = d0.getFullYear() + "-" + String(d0.getMonth() + 1).padStart(2, "0");
     b.innerHTML = wait + `<div class="setbox"><h3>確認キーを変える</h3>
       <input id="nk1" type="password" placeholder="新しい確認キー（4文字以上）" autocomplete="off"><input id="nk2" type="password" placeholder="もう一度" autocomplete="off">
       <button class="sv" onclick="setKey()">確認キーを変える</button><p class="note">変えたら、確認者の人に新しいキーを伝えてください。管理用の端末はキーなしのまま入れます。</p></div>
       <div class="setbox"><h3>直行直帰の通知の送り先（LINE WORKS）</h3><div id="toList">${to.map(([n, id]) => toRow(n, id)).join("")}</div>
       <button class="plus" onclick="$('toList').insertAdjacentHTML('beforeend', toRow('', ''))">＋ 送り先を足す</button><button class="sv" onclick="setTo()">送り先を保存</button>
-      <p class="note">左に名前、右に LINE WORKS の社員ID。名前は、確認したときに「確認者」に入る名前です。</p></div>`;
+      <p class="note">左に名前、右に LINE WORKS の社員ID。名前は、確認したときに「確認者」に入る名前です。</p>
+      <button class="plus" onclick="admSend({action:'notifytest'}, 'ためし送りしています…')">ためし送りする</button></div>
+      <div class="setbox"><h3>月の記録簿</h3><p class="note">毎月1日の朝6時に、先月分の記録簿（1人1枚のPDF）がドライブに入ります。下の宛先にはそのお知らせのメールが届きます。</p>
+      <input id="mailTo" placeholder="メールアドレス（2人以上は , で区切る）" value="${esc(ADM.mailTo)}"><button class="sv" onclick="admSend({action:'mailto', to: $('mailTo').value}, '宛先を保存しました')">宛先を保存</button>
+      <p class="note" style="margin-top:14px">記録を直したあとなど、記録簿を作り直したいとき：</p>
+      <button class="plus" onclick="remake('${pm}')">先月（${pm.replace("-", "年")}月）を作り直す</button><button class="plus" onclick="remake('${ym}')">今月（${ym.replace("-", "年")}月）を作り直す</button></div>
+      <div class="setbox"><h3>玄関iPadの共通の合言葉</h3><p class="note">${ADM.dk ? "今は使っています。玄関iPadなど、端末の登録をしていない共用の端末がこの合言葉で動いています。" : "今は止めています。登録した端末だけが使えます。"}</p>
+      <button class="plus" onclick="dkRenew()">合言葉を作り直す</button>${ADM.dk ? `<button class="plus" style="border-color:#c5221f;color:#c5221f" onclick="dkStop()">合言葉を止める</button>` : ""}
+      <p class="note">作り直すと、前の合言葉の端末は送れなくなります。新しい合言葉をその端末の「この端末を登録」→「合言葉」に入れ直してください。</p></div>`;
   }
 }
+const expTag = d => { if(!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return ""; const t = ymd(), soon = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10); return d < t ? `<span class="tg red">期限切れ</span>` : d <= soon ? `<span class="tg">あと${Math.ceil((new Date(d) - new Date(t)) / 864e5)}日</span>` : ""; };
+/* 確認者の画面の上に出す知らせ：車検・免許・検知器の期限、検知器の点検 */
+function warns(){
+  const t = ymd(), soon = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10), out = [];
+  const ok = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "");
+  (MST.cars || []).forEach(c => { if(ok(c.exp) && c.exp < t) out.push({lv: "red", t: "車検切れ：" + c.no + "（" + c.exp + "）乗らせないでください"}); else if(ok(c.exp) && c.exp <= soon) out.push({lv: "org", t: "車検が近い：" + c.no + "（" + c.exp + "まで）"}); });
+  Object.entries(MST.licExp || {}).forEach(([n, d]) => { if(d < t) out.push({lv: "red", t: "免許の期限切れ：" + n + " さん（" + d + "）運転させないでください"}); else if(d <= soon) out.push({lv: "org", t: "免許の更新が近い：" + n + " さん（" + d + "まで）"}); });
+  if(ADM) ADM.det.forEach(d => { const v = d.v; if(v[6] === "廃棄") return;
+    if(v[6] === "故障") out.push({lv: "red", t: "検知器が故障：" + v[0]});
+    else if(ok(v[5]) && v[5] < t) out.push({lv: "red", t: "検知器の交換時期を過ぎています：" + v[0] + "（" + v[5] + "）"});
+    else if(ok(v[5]) && v[5] <= soon) out.push({lv: "org", t: "検知器の交換時期が近い：" + v[0] + "（" + v[5] + "）"});
+    if(d.last && d.last[3] === "異常あり") out.push({lv: "red", t: "検知器の点検で異常あり：" + v[0] + "（" + d.last[0] + "）"}); });
+  return out;
+}
+function confirmMissed(){
+  const l = missed(); if(!l.length) return;
+  if(!confirm(l.length + "件を「事後確認（確認漏れ）」として確認済みにします。記録を見て問題がないことを確かめましたか？")) return;
+  const name = $("cName").value; sv("confName", name);
+  Q.push({action: "confirm", key: KEY, name, method: "事後確認（確認漏れ）", at: now(), items: l.map(r => ({id: r.id, ok: !(+r.value > 0)}))}); svQ();
+  toast(l.length + "件 確認しました"); renderConf(); sync();
+}
+function edRec(id){
+  const r = all().find(x => x.id === id); if(!r) return;
+  ED = {t: "rec", id};
+  const names = (MST.drivers || []).includes(r.driver) ? MST.drivers : [r.driver].concat(MST.drivers || []);
+  const cx = r.status === "取消";
+  edOpen(r.driver + " さん " + r.at.slice(5, 16).replace("-", "/"), `<p class="note">測った数字 <b>${esc(r.value)}</b> mg/L・時刻・写真は直せません。</p>
+    <label>運転者</label><select id="rDrv" ${cx ? "disabled" : ""}>${names.map(n => `<option${n === r.driver ? " selected" : ""}>${esc(n)}</option>`).join("")}</select>
+    <label>車のナンバー</label><input id="rCar" value="${esc(r.car)}" ${cx ? "disabled" : ""}>
+    <label>区分</label><select id="rKind" ${cx ? "disabled" : ""}>${opt(["運転前", "運転後"], r.kind === "後" ? "運転後" : "運転前")}</select>
+    <label>直す理由（必ず書く）</label><input id="rWhy" placeholder="例：名前を押しまちがえた／二重に記録した">
+    ${cx ? `<p class="note">この記録は取り消してあります。</p>` : ""}`, !cx);
+  $("edDel").textContent = "取り消す";
+}
+function edDet(i){
+  const v = i >= 0 ? ADM.det[i].v : ["", "", "", "", "", "", "使用中", ""], o = ADM.opts;
+  ED = {t: "det", orig: i >= 0 ? v[0] : ""};
+  edOpen(i >= 0 ? v[0] : "検知器を追加", `<label>名前（見分けがつく名前。例：玄関1号、平田さん携帯用）</label><input id="dNm" value="${esc(v[0])}">
+    <label>機種</label><input id="dModel" value="${esc(v[1])}"><label>製造番号</label><input id="dSer" value="${esc(v[2])}">
+    <label>置き場所・使う人</label><input id="dPlace" value="${esc(v[3])}">
+    <label>使い始めた日</label><input id="dStart" type="date" value="${esc(v[4])}">
+    <label>交換の目安</label><input id="dUntil" type="date" value="${esc(v[5])}"><div class="hint">取扱説明書にある使用期限・使用回数の目安の日</div>
+    <label>状態</label><select id="dSt">${opt(o.dst, v[6])}</select><label>備考</label><input id="dNote" value="${esc(v[7])}">
+    ${i >= 0 && ADM.det[i].logs.length ? `<label>最近の点検</label><div class="fixlog">${ADM.det[i].logs.map(l => esc(l[0] + "　" + l[3] + "　" + l[2] + (l[4] ? "：" + l[4] : ""))).join("<br>")}</div>` : ""}`, i >= 0);
+}
+function detCheck(i){
+  const v = ADM.det[i].v; ED = {t: "chk", det: v[0]};
+  edOpen(v[0] + " の点検", `<label>結果</label><select id="kRes">${opt(ADM.opts.res, "異常なし")}</select>
+    <label>内容（異常ありのときは必ず）</label><input id="kMemo" placeholder="例：電源が入らない">
+    <p class="note">点検した人：${esc($("cName").value)}（確認者の画面で選んだ名前）</p>`, false);
+}
+function showDk(k){ edOpen("新しい合言葉", `<p style="font-size:30px;font-weight:800;letter-spacing:2px;color:#14503f;font-family:ui-monospace,monospace">${esc(k)}</p><p class="note">玄関iPadで「この端末を登録」→「合言葉」に入れ直してください。この画面を閉じると、もう表示されません（メモしてください）。</p>`, false); ED = null; }
+function dkRenew(){ if(confirm("共通の合言葉を作り直します。今の合言葉で動いている端末（玄関iPadなど）は、新しい合言葉を入れ直すまで送れなくなります。よろしいですか？")) admSend({action: "dkrenew"}, "合言葉を作り直しています…"); }
+function dkStop(){ if(confirm("共通の合言葉を止めます。登録していない端末（玄関iPadなど）は送れなくなります。よろしいですか？")) admSend({action: "dkstop"}, "止めています…"); }
+function remake(ym){ if(confirm(ym.replace("-", "年") + "月の記録簿を作り直します。前のPDFは入れ替わります。よろしいですか？")) admSend({action: "remake", ym}, "作り直しを頼みました"); }
 const toRow = (n, id) => `<div class="to"><input class="tn" placeholder="名前" value="${esc(n)}"><input class="ti" placeholder="LINE WORKS の社員ID" value="${esc(id)}"><button onclick="this.parentNode.remove()">消す</button></div>`;
-function admSend(a, msg){ Q.push(Object.assign({key: KEY, at: now()}, a)); svQ(); toast(msg); edClose(); admDraw(); sync(); }
+function admSend(a, msg){ Q.push(Object.assign({key: KEY, at: now(), name: $("cName").value}, a)); svQ(); toast(msg); edClose(); admDraw(); sync(); }
 const opt = (list, v) => list.map(x => `<option value="${esc(x)}"${x === v ? " selected" : ""}>${esc(x || "（なし）")}</option>`).join("");
-function edOpen(title, html, canDel){ $("edT").textContent = title; $("edF").innerHTML = html; $("edDel").classList.toggle("hide", !canDel); $("edit").classList.add("on"); }
+function edOpen(title, html, canDel){ $("edDel").textContent = "削除"; $("edT").textContent = title; $("edF").innerHTML = html; $("edDel").classList.toggle("hide", !canDel); $("edit").classList.add("on"); }
 function edClose(){ $("edit").classList.remove("on"); ED = null; }
 function edStaff(i){
-  const x = i >= 0 ? ADM.staff[i] : {name: "", role: "", dept: "工事課", lic: "", mt: "MT", st: "在籍"}, o = ADM.opts;
+  const x = i >= 0 ? ADM.staff[i] : {name: "", role: "", dept: "工事課", lic: "", mt: "MT", st: "在籍", exp: ""}, o = ADM.opts;
   ED = {t: "staff", orig: i >= 0 ? x.name : ""};
   edOpen(i >= 0 ? x.name + " さん" : "社員を追加", `<label>名前（姓と名の間は空ける）</label><input id="eName" value="${esc(x.name)}">
     <label>役割</label><select id="eRole">${opt(o.role, x.role)}</select><div class="hint">班長・管理者は、ほかの人の確認ができます</div>
     <label>課</label><select id="eDept">${opt(o.dept, x.dept)}</select>
     <label>運転免許</label><select id="eLic">${opt(o.lic, x.lic)}</select><div class="hint">2007年6月より前の普通免許は「中型（8t限定）」、2007年6月〜2017年3月の普通免許は「準中型（5t限定）」</div>
     <label>MT・AT</label><select id="eMt">${opt(o.mt, x.mt)}</select>
+    <label>免許の有効期限</label><input id="eExp" type="date" value="${esc(x.exp || "")}"><div class="hint">免許証の「○年○月○日まで有効」。切れると記録のときに止めて知らせます</div>
     <label>状態</label><select id="eSt">${opt(o.st, x.st)}</select><div class="hint">退職にすると名前の一覧から消えます（記録は残ります）</div>`, i >= 0);
 }
 function edCar(i){
@@ -778,22 +871,38 @@ function edCar(i){
     <label>備考</label><input id="cNote" value="${esc(r[10])}">`, i >= 0);
 }
 function edSave(){
-  if(!ED) return;
+  if(!ED) { edClose(); return; }
   if(ED.t === "staff"){
-    const v = {name: $("eName").value, role: $("eRole").value, dept: $("eDept").value, lic: $("eLic").value, mt: $("eMt").value, st: $("eSt").value};
+    const v = {name: $("eName").value, role: $("eRole").value, dept: $("eDept").value, lic: $("eLic").value, mt: $("eMt").value, st: $("eSt").value, exp: $("eExp").value};
     if(!v.name.trim()){ toast("名前を入れてください"); return; }
     admSend({action: "staffsave", orig: ED.orig, v}, "保存しました：" + v.name.trim());
-  } else {
+  } else if(ED.t === "car"){
     const v = {no: $("cNo").value, name: $("cNm").value, kind: $("cKind").value, use: $("cUse").value, cap: $("cCap").value, load: $("cLoad").value, gvw: $("cGvw").value, mt: $("cMt").value, exp: $("cExp").value, note: $("cNote").value};
     if(!v.no.trim()){ toast("登録番号を入れてください"); return; }
     admSend({action: "carsave", orig: ED.orig, v}, "保存しました：" + v.no.trim());
+  } else if(ED.t === "rec"){
+    if(!$("rWhy").value.trim()){ toast("直す理由を書いてください"); return; }
+    admSend({action: "recfix", id: ED.id, reason: $("rWhy").value, v: {driver: $("rDrv").value, car: $("rCar").value, kind: $("rKind").value}}, "直しました");
+  } else if(ED.t === "det"){
+    const v = {name: $("dNm").value, model: $("dModel").value, serial: $("dSer").value, place: $("dPlace").value, start: $("dStart").value, until: $("dUntil").value, st: $("dSt").value, note: $("dNote").value};
+    if(!v.name.trim()){ toast("名前を入れてください"); return; }
+    admSend({action: "detsave", orig: ED.orig, v}, "保存しました：" + v.name.trim());
+  } else if(ED.t === "chk"){
+    if($("kRes").value === "異常あり" && !$("kMemo").value.trim()){ toast("異常の内容を書いてください"); return; }
+    admSend({action: "detcheck", det: ED.det, res: $("kRes").value, memo: $("kMemo").value}, "点検を記録しました");
   }
 }
 function edDel(){
-  if(!ED || !ED.orig) return;
-  const w = ED.t === "staff" ? ED.orig + " さんを名簿から削除します。\n（辞めた人は「状態：退職」にすると、名前だけ消えて記録の見直しがしやすくなります）\nよろしいですか？" : ED.orig + " を車両の一覧から削除します。よろしいですか？";
+  if(!ED) return;
+  if(ED.t === "rec"){
+    if(!$("rWhy").value.trim()){ toast("取り消す理由を書いてください"); return; }
+    if(!confirm("この記録を取り消します。記録簿には載らなくなります（消えはせず、取り消した記録として残ります）。よろしいですか？")) return;
+    admSend({action: "reccancel", id: ED.id, reason: $("rWhy").value}, "取り消しました"); return;
+  }
+  if(!ED.orig) return;
+  const w = ED.t === "staff" ? ED.orig + " さんを名簿から削除します。\n（辞めた人は「状態：退職」にすると、名前だけ消えて記録の見直しがしやすくなります）\nよろしいですか？" : ED.orig + " を一覧から削除します。よろしいですか？";
   if(!confirm(w)) return;
-  admSend({action: ED.t === "staff" ? "staffdel" : "cardel", orig: ED.orig}, "削除しました：" + ED.orig);
+  admSend({action: ED.t === "staff" ? "staffdel" : ED.t === "car" ? "cardel" : "detdel", orig: ED.orig}, "削除しました：" + ED.orig);
 }
 function setKey(){
   const a = $("nk1").value.trim(), b = $("nk2").value.trim();
@@ -819,7 +928,7 @@ function confirmAll(){
 }
 function printMonth(){
   const m = ymd().slice(0, 7);
-  const rs = all().filter(r => r.date.startsWith(m)).sort((a, b) => a.at < b.at ? -1 : 1);
+  const rs = all().filter(r => r.date.startsWith(m) && r.status !== "取消").sort((a, b) => a.at < b.at ? -1 : 1);
   if(!rs.length){ toast("今月の記録がありません"); return; }
   const P = 18, pages = []; for(let i = 0; i < rs.length; i += P) pages.push(rs.slice(i, i + P));
   const th = ["日付:9", "区分:12", "時刻:11", "運転者:24", "車のナンバー:26", "確認方法:16", "検知器:13", "測定値<br>mg/L:13", "酒気帯び:13", "確認者:26", "確認日時:20", "指示事項:", "その他:40"]
@@ -859,12 +968,13 @@ async function sync(manual){
       }
       if(!(DK && !dkBad)) setDev("ok");
       if(d.devices){ DEVS = d.devices; }
-      if(d.adm){ ADM = d.adm; if(VIEW === "adm") admDraw(); }
+      if(d.adm){ ADM = d.adm; }
       if(d.me){ ADMIN = !!d.me.admin; sv("admin", ADMIN); if(!ADMIN && KEY === "@admin") KEY = ""; }
       if(send.length){
         Q = Q.slice(send.length); svQ();
         for(const a of send) if(a.action === "submit" && a.rec.date !== ymd()) phDel(a.rec.id);   // 送った古い写真は端末から消す
         const e = (d.results || []).filter(x => x.error); if(e.length){ toast("⚠ " + e[0].error); if(/キー/.test(e[0].error)) KEY = ""; }
+        (d.results || []).forEach(x => { if(x.dk){ if(DK){ DK = dkNorm(x.dk); sv("dk", DK); dkBad = false; } showDk(x.dk); } else if(x.msg) toast(x.msg); });   // この端末が合言葉で動いていたら、自分の分は入れ替える
       }
       RECS = d.recs || RECS; sv("recs", RECS);
       if(d.master){ MST = d.master; sv("mst", MST); }
