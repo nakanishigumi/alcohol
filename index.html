@@ -122,6 +122,9 @@ header button.send.red{background:#c5221f}
 .adm .srch{display:flex;gap:8px;margin-bottom:10px}.adm .srch input,.adm .srch select{flex:1;padding:12px;font-size:17px;border:1px solid #cfd9d5;border-radius:10px;background:#fff;-webkit-user-select:text;user-select:text}
 .adm .it.cx{opacity:.5;text-decoration:line-through}
 .fixlog{font-size:13px;color:#5f6368;line-height:1.6}
+.topback{border:none;background:#fff;color:#14503f;border-radius:12px;padding:12px 18px;font-size:17px;font-weight:700;margin:4px 0 10px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+header #admBtn{margin-left:6px}
+header #confBtn,header #admBtn{white-space:nowrap}
 .tabs{display:flex;gap:6px;margin:6px 0 14px}.tabs button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 2px;font-size:16px;font-weight:700;color:#5f6368}
 .tabs button.on{border-color:#14503f;background:#14503f;color:#fff}
 .adm .it{cursor:pointer}.adm .it .nm small{white-space:normal}.adm .it.out{opacity:.5}
@@ -206,7 +209,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 <body>
 <header>
   <div style="display:flex;align-items:center;gap:12px"><button id="backBtn" class="backtop hide" onclick="goBack()">← 戻る</button><h1>アルコールチェック</h1></div>
-  <div><button id="sendBtn" class="send" onclick="sync(true)"></button><span class="clock" id="clock"></span><button onclick="openConf()" id="confBtn">確認者</button></div>
+  <div><button id="sendBtn" class="send" onclick="sync(true)"></button><span class="clock" id="clock"></span><button onclick="openConf()" id="confBtn">確認者</button><button onclick="admOpen()" id="admBtn">管理</button></div>
 </header>
 
 <main>
@@ -284,8 +287,8 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
   <!-- 確認キー -->
   <section id="v-key" class="hide">
     <div class="box" style="max-width:460px;margin:30px auto">
-      <h2>確認者の画面を開く</h2>
-      <div class="lbl">確認キー</div>
+      <h2 id="kTitle">確認者の画面を開く</h2>
+      <div class="lbl" id="kLbl">確認キー</div>
       <input id="kIn" type="password" inputmode="numeric" autocomplete="off" style="width:100%;padding:14px;font-size:22px;border:1px solid #cfd9d5;border-radius:10px;-webkit-user-select:text;user-select:text" onkeydown="if(event.key==='Enter')keyOk()">
       <button class="go" onclick="keyOk()">開く</button>
       <button class="back" onclick="home()">戻る</button>
@@ -294,6 +297,7 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
 
   <!-- 確認者 -->
   <section id="v-conf" class="hide">
+    <button class="topback" onclick="home()">← 名前の画面に戻る</button>
     <div id="warnBox"></div>
     <h2>確認待ち（今日）</h2>
     <div class="list" id="cList"></div>
@@ -304,18 +308,18 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
     <button class="go" id="cAll" onclick="confirmAll()">目視確認 異常なし　まとめて確認</button>
     <div class="list" id="mList"></div>
     <button class="back" onclick="printMonth()">今月の記録簿を印刷・PDF</button>
-    <button class="back" onclick="admOpen()">社員・車両・設定</button>
-    <div class="devs list" id="dList"></div>
     <button class="back" onclick="home()">名前の画面に戻る</button>
-    <p class="note">端末の「承認（直行直帰）」は個人スマホなど。その端末の記録は、管理者の LINE WORKS に写真つきで通知され、通知のリンクから確認できます。玄関iPadなど共用の端末は「承認（共用）」。</p>
     <p class="note">班長が確認できなかった人（班長本人の分を含む）を、安全運転管理者が確認する画面です。電話で声の調子を確かめて数値を聞いてから、方法を「電話」にして確認してください。運転させない人は先に「止める」を押します。</p>
   </section>
 
   <!-- 社員・車両・設定 -->
   <section id="v-adm" class="hide">
-    <div class="tabs"><button id="tRec" onclick="admTab('rec')">記録</button><button id="tStaff" onclick="admTab('staff')">社員</button><button id="tCar" onclick="admTab('car')">車両</button><button id="tDet" onclick="admTab('det')">検知器</button><button id="tSet" onclick="admTab('set')">設定</button></div>
+    <button class="topback" onclick="admClose()">← 名前の画面に戻る</button>
+    <h2 style="margin-top:6px">管理</h2>
+    <div class="row" style="margin:0 0 12px">操作する人 <select id="aName" onchange="sv('admName', this.value)"></select></div>
+    <div class="tabs"><button id="tRec" onclick="admTab('rec')">記録</button><button id="tStaff" onclick="admTab('staff')">社員</button><button id="tCar" onclick="admTab('car')">車両</button><button id="tDet" onclick="admTab('det')">検知器</button><button id="tDev" onclick="admTab('dev')">端末</button><button id="tSet" onclick="admTab('set')">設定</button></div>
     <div id="admBody"></div>
-    <button class="back" onclick="openConf()">確認者の画面に戻る</button>
+    <button class="back" onclick="admClose()">名前の画面に戻る</button>
   </section>
 </main>
 <div id="edit"><div class="box"><h3 id="edT"></h3><div id="edF"></div>
@@ -337,7 +341,7 @@ const SYNC_URL = "https://script.google.com/macros/s/AKfycbxfZmxR7Kk1uQP1cvAjaPv
 const ld = (k, d) => { try{ return JSON.parse(localStorage.getItem("alc_" + k)) ?? d; }catch(e){ return d; } };
 const sv = (k, v) => { try{ localStorage.setItem("alc_" + k, JSON.stringify(v)); }catch(e){} };
 let RECS = ld("recs", []), MST = ld("mst", {drivers: [], cars: []}), Q = ld("q", []);
-let cur = null, val = "", KEY = "", keyTimer = null;
+let cur = null, val = "", KEY = "", keyTimer = null, AK = "", akTimer = null, KMODE = "conf";
 let ADMIN = ld("admin", false);   // この端末が「管理用」（確認キーなしで確認者の画面に入れる）
 /* 端末の合言葉：この端末が会社のものだと同期サーバに示す。管理者が1回だけ入れる（このファイルには書かない） */
 const dkNorm = k => String(k || "").replace(/[\s\-]/g, "").toLowerCase();
@@ -644,7 +648,7 @@ function pickLeader(){
 /* 確認者（キーは入れてから5分だけ有効。共用iPadなので覚えない） */
 function openConf(){
   if(!KEY && ADMIN && DEVST === "ok" && !(DK && !dkBad)) KEY = "@admin";   // 管理用の端末はキーを聞かない
-  if(!KEY){ $("kIn").value = ""; show("key"); setTimeout(() => $("kIn").focus(), 100); return; }
+  if(!KEY){ keyAsk("conf"); return; }
   clearTimeout(keyTimer); if(KEY !== "@admin") keyTimer = setTimeout(() => { KEY = ""; if(!$("v-conf").classList.contains("hide")) home(); }, 300000);
   const cn = ld("confName", "");
   $("cName").innerHTML = ((MST.admins || []).length ? MST.admins : (MST.leaders || []).length ? MST.leaders : MST.drivers).map(n => `<option${n === cn ? " selected" : ""}>${esc(n)}</option>`).join("");
@@ -678,9 +682,13 @@ function dkOk(){
   const k = dkNorm($("dkIn").value); if(!k){ toast("端末の合言葉を入れてください"); return; }
   DK = k; sv("dk", DK); dkBad = false; home(); sync(true);
 }
+function keyAsk(m){
+  KMODE = m; $("kTitle").textContent = m === "adm" ? "管理の画面を開く" : "確認者の画面を開く"; $("kLbl").textContent = m === "adm" ? "管理パスワード" : "確認キー";
+  $("kIn").value = ""; $("kIn").inputMode = m === "adm" ? "text" : "numeric"; show("key"); setTimeout(() => $("kIn").focus(), 100);
+}
 function keyOk(){
-  const k = $("kIn").value.trim(); if(!k){ toast("確認キーを入れてください"); return; }
-  KEY = k; openConf();
+  const k = $("kIn").value.trim(); if(!k){ toast(KMODE === "adm" ? "管理パスワードを入れてください" : "確認キーを入れてください"); return; }
+  if(KMODE === "adm"){ AK = k; admOpen(); } else { KEY = k; openConf(); }
 }
 const pend = () => today().filter(r => !r.confirmer && r.status !== "取消");
 const missed = () => all().filter(r => r.date < ymd() && !r.confirmer && r.status !== "取消").sort((a, b) => a.at < b.at ? -1 : 1);   // 確認漏れ（前の日以前）
@@ -714,6 +722,7 @@ async function loadFaces(l){
 }
 /* 端末の承認・止める（確認キーを付けて送る。自分の端末は止められない） */
 function renderDevs(){
+  if(!$("dList")) return;
   const ord = {"申請中": 0, "使用可": 1, "停止": 2}, l = DEVS.slice().sort((a, b) => (ord[a.st] ?? 3) - (ord[b.st] ?? 3));
   const pend = Q.filter(a => /^dev/.test(a.action)).map(a => a.id);
   $("dList").innerHTML = `<h3>端末（${l.filter(d => d.st === "使用可").length}台が使用中${l.some(d => d.st === "申請中") ? `・申請 ${l.filter(d => d.st === "申請中").length}件` : ""}）</h3>` + (l.length ? l.map(d => {
@@ -728,9 +737,9 @@ function renderDevs(){
   }).join("") : `<p class="note">端末の一覧はまだありません（電波のある所で開くと出ます）</p>`);
 }
 function devDo(action, id, notify){
-  if(!KEY) return;
+  if(!AK) return;
   if(action === "devadmin" && notify && !confirm("この端末を管理用にすると、確認キーなしで確認者の画面に入れます。\nなくしたときは、すぐ「止める」を押してください。よろしいですか？")) return;
-  Q.push({action, key: KEY, id, notify, admin: notify, name: $("cName").value, at: now()}); svQ();
+  Q.push({action, ak: AK, id, notify, admin: notify, name: $("aName").value, at: now()}); svQ();
   toast(action === "devok" ? (notify ? "承認しました（直行直帰：記録が入ると管理者へ通知）" : "承認しました（共用：通知なし）") : action === "devnotify" ? (notify ? "直行直帰にしました（通知あり）" : "共用にしました（通知なし）") : action === "devadmin" ? (notify ? "管理用にしました（キーなしで入れます）" : "管理用をやめました") : action === "devstop" ? "止めました" : "申請を断りました");
   const d = DEVS.find(x => x.id === id); if(d && action === "devnotify") d.notify = notify; if(d && action === "devadmin") d.admin = notify;
   renderDevs(); sync();
@@ -738,8 +747,16 @@ function devDo(action, id, notify){
 
 /* ===== 社員・車両・設定（確認キーが入っているときだけ） ===== */
 let ADM = null, ADT = "rec", ED = null;
-function admOpen(){ if(!KEY){ openConf(); return; } show("adm"); admTab(ADT); sync(); }
-function admTab(t){ ADT = t; ["Rec","Staff","Car","Det","Set"].forEach(x => $("t" + x).classList.toggle("on", x.toLowerCase() === t)); admDraw(); }
+function admOpen(){
+  if(!AK && ADMIN && DEVST === "ok" && !(DK && !dkBad)) AK = "@admin";   // 管理用の端末はパスワードを聞かない
+  if(!AK){ keyAsk("adm"); return; }
+  clearTimeout(akTimer); if(AK !== "@admin") akTimer = setTimeout(() => { AK = ""; if(VIEW === "adm") home(); }, 600000);
+  const an = ld("admName", "");
+  $("aName").innerHTML = ((MST.admins || []).length ? MST.admins : MST.drivers || []).map(n => `<option${n === an ? " selected" : ""}>${esc(n)}</option>`).join("");
+  show("adm"); admTab(ADT); sync();
+}
+function admClose(){ home(); }
+function admTab(t){ ADT = t; ["Rec","Staff","Car","Det","Dev","Set"].forEach(x => $("t" + x).classList.toggle("on", x.toLowerCase() === t)); admDraw(); }
 const ADM_ACT = /^(staff|car|det)(save|del)$|^set(key|to)$|^rec(fix|cancel)$|^detcheck$|^dk(renew|stop)$|^mailto$|^remake$|^notifytest$/;
 function admBusy(){ return Q.some(a => ADM_ACT.test(a.action)); }
 function admDraw(){
@@ -762,6 +779,9 @@ function admDraw(){
   } else if(ADT === "car"){
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edCar(-1)">＋ 車両を追加</button><p class="cnt">${ADM.cars.length}台　（押すと直せます）</p>`
       + ADM.cars.map((r, i) => `<div class="it" onclick="edCar(${i})"><div class="nm">${esc(r[0])}<small>${[r[1], r[7] ? "必要な免許 " + r[7] : "", r[8], r[9] ? "車検 " + r[9] : ""].filter(Boolean).map(esc).join("・")}</small></div>${expTag(r[9])}</div>`).join("") + `</div>`;
+  } else if(ADT === "dev"){
+    b.innerHTML = `<div class="devs list" id="dList"></div><p class="note">「承認（直行直帰）」は個人スマホなど。その端末の記録は、通知の送り先に LINE WORKS で届きます。玄関iPadなど共用の端末は「承認（共用）」。「管理用」にした端末は、パスワードなしで管理と確認者の画面に入れます（なくしたらすぐ「止める」）。</p>`;
+    renderDevs(); return;
   } else if(ADT === "det"){
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edDet(-1)">＋ 検知器を追加</button>
       <p class="cnt">${ADM.det.length}台。押すと直せます。「点検」で、壊れていないかの点検を記録します（電源が入る・ひびや汚れがない・正しく測れる）。</p>`
@@ -769,7 +789,11 @@ function admDraw(){
   } else {
     const to = Object.entries(ADM.to || {}), ym = ymd().slice(0, 7), d0 = new Date(); d0.setDate(0);
     const pm = d0.getFullYear() + "-" + String(d0.getMonth() + 1).padStart(2, "0");
-    b.innerHTML = wait + `<div class="setbox"><h3>確認キーを変える</h3>
+    b.innerHTML = wait + `<div class="setbox"><h3>管理パスワード${ADM.admPass ? "を変える" : "を決める"}</h3>
+      ${ADM.admPass ? "" : `<p class="note" style="color:#a50e0e;font-weight:700">まだ管理パスワードがありません。今は確認キーで管理の画面に入れてしまうので、ここで決めてください。</p>`}
+      <input id="ap1" type="password" placeholder="管理パスワード（6文字以上・確認キーとは別）" autocomplete="off"><input id="ap2" type="password" placeholder="もう一度" autocomplete="off">
+      <button class="sv" onclick="setAdmPass()">管理パスワードを${ADM.admPass ? "変える" : "決める"}</button><p class="note">管理パスワードは、安全運転管理者など管理する人だけが知るものにしてください。</p></div>
+      <div class="setbox"><h3>確認キーを変える</h3>
       <input id="nk1" type="password" placeholder="新しい確認キー（4文字以上）" autocomplete="off"><input id="nk2" type="password" placeholder="もう一度" autocomplete="off">
       <button class="sv" onclick="setKey()">確認キーを変える</button><p class="note">変えたら、確認者の人に新しいキーを伝えてください。管理用の端末はキーなしのまま入れます。</p></div>
       <div class="setbox"><h3>直行直帰の通知の送り先（LINE WORKS）</h3><div id="toList">${to.map(([n, id]) => toRow(n, id)).join("")}</div>
@@ -841,7 +865,7 @@ function dkRenew(){ if(confirm("共通の合言葉を作り直します。今の
 function dkStop(){ if(confirm("共通の合言葉を止めます。登録していない端末（玄関iPadなど）は送れなくなります。よろしいですか？")) admSend({action: "dkstop"}, "止めています…"); }
 function remake(ym){ if(confirm(ym.replace("-", "年") + "月の記録簿を作り直します。前のPDFは入れ替わります。よろしいですか？")) admSend({action: "remake", ym}, "作り直しを頼みました"); }
 const toRow = (n, id) => `<div class="to"><input class="tn" placeholder="名前" value="${esc(n)}"><input class="ti" placeholder="LINE WORKS の社員ID" value="${esc(id)}"><button onclick="this.parentNode.remove()">消す</button></div>`;
-function admSend(a, msg){ Q.push(Object.assign({key: KEY, at: now(), name: $("cName").value}, a)); svQ(); toast(msg); edClose(); admDraw(); sync(); }
+function admSend(a, msg){ Q.push(Object.assign({ak: AK, at: now(), name: $("aName").value}, a)); svQ(); toast(msg); edClose(); admDraw(); sync(); }
 const opt = (list, v) => list.map(x => `<option value="${esc(x)}"${x === v ? " selected" : ""}>${esc(x || "（なし）")}</option>`).join("");
 function edOpen(title, html, canDel){ $("edDel").textContent = "削除"; $("edT").textContent = title; $("edF").innerHTML = html; $("edDel").classList.toggle("hide", !canDel); $("edit").classList.add("on"); }
 function edClose(){ $("edit").classList.remove("on"); ED = null; }
@@ -904,6 +928,14 @@ function edDel(){
   if(!confirm(w)) return;
   admSend({action: ED.t === "staff" ? "staffdel" : ED.t === "car" ? "cardel" : "detdel", orig: ED.orig}, "削除しました：" + ED.orig);
 }
+function setAdmPass(){
+  const a = $("ap1").value.trim(), b = $("ap2").value.trim();
+  if(a.length < 6){ toast("6文字以上にしてください"); return; }
+  if(a !== b){ toast("2つの入力が同じではありません"); return; }
+  if(!confirm("管理パスワードを" + (ADM.admPass ? "変えます" : "決めます") + "。よろしいですか？")) return;
+  admSend({action: "setadmin", np: a}, "保存しています…");
+  if(AK !== "@admin") AK = a;
+}
 function setKey(){
   const a = $("nk1").value.trim(), b = $("nk2").value.trim();
   if(a.length < 4){ toast("4文字以上にしてください"); return; }
@@ -958,7 +990,7 @@ async function sync(manual){
         if(a.action === "submit" && a.rec.hasPh){ const v = await phGet(a.rec.id); body.push(Object.assign({}, a, {rec: Object.assign({}, a.rec, {photo: v ? v.img : ""})})); }
         else body.push(a);
       }
-      const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK && !dkBad ? DK : "", did: DID, ds: DS, key: KEY || undefined, actions: body})});
+      const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK && !dkBad ? DK : "", did: DID, ds: DS, key: KEY || undefined, ak: AK || undefined, actions: body})});
       const tx = await res.text();
       let d; try{ d = JSON.parse(tx); }catch(e){   // 断られたときは何も消さずに止まる
         if(/DEVICE_PENDING/.test(tx)) setDev("pending");
@@ -969,11 +1001,12 @@ async function sync(manual){
       if(!(DK && !dkBad)) setDev("ok");
       if(d.devices){ DEVS = d.devices; }
       if(d.adm){ ADM = d.adm; }
-      if(d.me){ ADMIN = !!d.me.admin; sv("admin", ADMIN); if(!ADMIN && KEY === "@admin") KEY = ""; }
+      if(d.akBad && AK){ AK = ""; ADM = null; toast("⚠ 管理パスワードが違います"); if(VIEW === "adm") keyAsk("adm"); }
+      if(d.me){ ADMIN = !!d.me.admin; sv("admin", ADMIN); if(!ADMIN && KEY === "@admin") KEY = ""; if(!ADMIN && AK === "@admin") AK = ""; }
       if(send.length){
         Q = Q.slice(send.length); svQ();
         for(const a of send) if(a.action === "submit" && a.rec.date !== ymd()) phDel(a.rec.id);   // 送った古い写真は端末から消す
-        const e = (d.results || []).filter(x => x.error); if(e.length){ toast("⚠ " + e[0].error); if(/キー/.test(e[0].error)) KEY = ""; }
+        const e = (d.results || []).filter(x => x.error); if(e.length){ toast("⚠ " + e[0].error); if(/管理パスワード/.test(e[0].error)) AK = ""; else if(/キー/.test(e[0].error)) KEY = ""; }
         (d.results || []).forEach(x => { if(x.dk){ if(DK){ DK = dkNorm(x.dk); sv("dk", DK); dkBad = false; } showDk(x.dk); } else if(x.msg) toast(x.msg); });   // この端末が合言葉で動いていたら、自分の分は入れ替える
       }
       RECS = d.recs || RECS; sv("recs", RECS);
