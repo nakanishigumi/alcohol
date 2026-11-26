@@ -116,10 +116,28 @@ header button.send.red{background:#c5221f}
 .reg .stbox{border-radius:12px;padding:12px 16px;margin:6px 0 14px;font-size:17px;line-height:1.5}
 .reg .stbox.wait{background:#fff4e0;border:2px solid #e8710a}.reg .stbox.ok{background:#e6f4ea;border:2px solid #1e8e3e}.reg .stbox.ng{background:#fdecea;border:2px solid #c5221f}
 .reg details{margin-top:18px;color:#5f6368}.reg summary{cursor:pointer;font-size:15px}
+.tabs{display:flex;gap:8px;margin:6px 0 14px}.tabs button{flex:1;border:2px solid #cfe0d9;background:#fff;border-radius:12px;padding:12px 4px;font-size:18px;font-weight:700;color:#5f6368}
+.tabs button.on{border-color:#14503f;background:#14503f;color:#fff}
+.adm .it{cursor:pointer}.adm .it .nm small{white-space:normal}.adm .it.out{opacity:.5}
+.adm .add{width:100%;border:2px dashed #1e8e3e;background:#fff;color:#1e8e3e;border-radius:14px;padding:14px;font-size:18px;font-weight:700;margin-bottom:10px}
+.adm .cnt{color:#5f6368;font-size:14px;margin:0 0 8px}
+.setbox{background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:14px}.setbox h3{margin:0 0 8px;font-size:19px}
+.setbox input{width:100%;padding:12px;font-size:18px;border:1px solid #cfd9d5;border-radius:10px;margin:4px 0 10px;-webkit-user-select:text;user-select:text}
+.setbox .to{display:flex;gap:8px;align-items:center;margin-bottom:8px}.setbox .to input{margin:0}.setbox .to button{flex:none;border:1px solid #c5221f;color:#c5221f;background:#fff;border-radius:10px;padding:10px 12px}
+.setbox button.sv{border:none;background:#1e8e3e;color:#fff;border-radius:12px;padding:12px 18px;font-size:17px;font-weight:700}
+.setbox button.plus{border:1px solid #1e8e3e;color:#1e8e3e;background:#fff;border-radius:10px;padding:10px 14px;font-size:16px;margin-right:8px}
+#edit{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;overflow:auto;padding:20px 10px}
+#edit.on{display:flex}#edit .box{background:#fff;border-radius:16px;padding:18px 20px;width:100%;max-width:520px}
+#edit h3{margin:0 0 10px;font-size:21px}#edit label{display:block;font-size:14px;color:#5f6368;margin-top:10px}
+#edit input,#edit select{width:100%;padding:11px;font-size:18px;border:1px solid #cfd9d5;border-radius:10px;background:#fff;-webkit-user-select:text;user-select:text}
+#edit .hint{font-size:13px;color:#5f6368;margin-top:4px}
+#edit .btns{display:flex;gap:8px;margin-top:18px}#edit .btns button{flex:1;border-radius:12px;padding:14px 6px;font-size:18px;font-weight:700;border:2px solid #cfd9d5;background:#fff}
+#edit .btns .ok{background:#1e8e3e;border-color:#1e8e3e;color:#fff}#edit .btns .del{border-color:#c5221f;color:#c5221f}
 .devs h3{margin:22px 0 8px;font-size:19px}
 .devs .it .nm small b{color:#14503f}
 .devs .it button.ok2{border-color:#1e8e3e;color:#1e8e3e}
 .devs .it.pend{background:#fff4e0}.devs .it.off{opacity:.6}
+@media (max-width:600px){.devs.list .it{flex-wrap:wrap}.devs.list .it .nm{flex:1 1 100%}.devs.list .it button{flex:1 1 0;min-width:0;margin-left:0}}
 header .clock{margin-left:12px}
 .grp{grid-column:1/-1;font-size:15px;font-weight:700;color:#14503f;margin-top:10px;border-bottom:2px solid #cfe0d9;padding-bottom:4px}
 .grp:first-child{margin-top:0}
@@ -278,12 +296,22 @@ header button.backtop{background:#fff;color:#14503f;font-weight:700;font-size:17
     </div>
     <button class="go" id="cAll" onclick="confirmAll()">目視確認 異常なし　まとめて確認</button>
     <button class="back" onclick="printMonth()">今月の記録簿を印刷・PDF</button>
+    <button class="back" onclick="admOpen()">社員・車両・設定</button>
     <div class="devs list" id="dList"></div>
     <button class="back" onclick="home()">名前の画面に戻る</button>
     <p class="note">端末の「承認（直行直帰）」は個人スマホなど。その端末の記録は、管理者の LINE WORKS に写真つきで通知され、通知のリンクから確認できます。玄関iPadなど共用の端末は「承認（共用）」。</p>
     <p class="note">班長が確認できなかった人（班長本人の分を含む）を、安全運転管理者が確認する画面です。電話で声の調子を確かめて数値を聞いてから、方法を「電話」にして確認してください。運転させない人は先に「止める」を押します。</p>
   </section>
+
+  <!-- 社員・車両・設定 -->
+  <section id="v-adm" class="hide">
+    <div class="tabs"><button id="tStaff" onclick="admTab('staff')">社員</button><button id="tCar" onclick="admTab('car')">車両</button><button id="tSet" onclick="admTab('set')">設定</button></div>
+    <div id="admBody"></div>
+    <button class="back" onclick="openConf()">確認者の画面に戻る</button>
+  </section>
 </main>
+<div id="edit"><div class="box"><h3 id="edT"></h3><div id="edF"></div>
+  <div class="btns"><button class="fix" onclick="edClose()">やめる</button><button class="del hide" id="edDel" onclick="edDel()">削除</button><button class="ok" onclick="edSave()">保存</button></div></div></div>
 <div id="printArea"></div>
 <div id="toast"></div>
 <div id="ck"><div class="box"><h3>これで記録しますか？</h3>
@@ -302,6 +330,7 @@ const ld = (k, d) => { try{ return JSON.parse(localStorage.getItem("alc_" + k)) 
 const sv = (k, v) => { try{ localStorage.setItem("alc_" + k, JSON.stringify(v)); }catch(e){} };
 let RECS = ld("recs", []), MST = ld("mst", {drivers: [], cars: []}), Q = ld("q", []);
 let cur = null, val = "", KEY = "", keyTimer = null;
+let ADMIN = ld("admin", false);   // この端末が「管理用」（確認キーなしで確認者の画面に入れる）
 /* 端末の合言葉：この端末が会社のものだと同期サーバに示す。管理者が1回だけ入れる（このファイルには書かない） */
 const dkNorm = k => String(k || "").replace(/[\s\-]/g, "").toLowerCase();
 let DK = dkNorm(ld("dk", "")), dkBad = false;
@@ -360,7 +389,7 @@ const mine = n => today().filter(r => r.driver === n);
 const nextKind = n => { const m = mine(n); return m.some(r => r.kind === "前") && !m.some(r => r.kind === "後") ? "後" : "前"; };
 
 let VIEW = "home";
-function show(v){ VIEW = v; ["home", "inp", "fin", "conf", "key", "team", "lead", "dk"].forEach(x => $("v-" + x).classList.toggle("hide", x !== v)); $("backBtn").classList.toggle("hide", v === "home"); window.scrollTo(0, 0); }
+function show(v){ VIEW = v; ["home", "inp", "fin", "conf", "key", "team", "lead", "dk", "adm"].forEach(x => $("v-" + x).classList.toggle("hide", x !== v)); $("backBtn").classList.toggle("hide", v === "home"); window.scrollTo(0, 0); }
 /* 左上の「← 戻る」：ナンバー入力中なら数値入力へ、それ以外は名前の画面へ */
 function goBack(){ if(VIEW === "inp" && step === 2){ setStep(1); return; } home(); }
 
@@ -604,8 +633,9 @@ function pickLeader(){
 
 /* 確認者（キーは入れてから5分だけ有効。共用iPadなので覚えない） */
 function openConf(){
+  if(!KEY && ADMIN && DEVST === "ok" && !(DK && !dkBad)) KEY = "@admin";   // 管理用の端末はキーを聞かない
   if(!KEY){ $("kIn").value = ""; show("key"); setTimeout(() => $("kIn").focus(), 100); return; }
-  clearTimeout(keyTimer); keyTimer = setTimeout(() => { KEY = ""; if(!$("v-conf").classList.contains("hide")) home(); }, 300000);
+  clearTimeout(keyTimer); if(KEY !== "@admin") keyTimer = setTimeout(() => { KEY = ""; if(!$("v-conf").classList.contains("hide")) home(); }, 300000);
   const cn = ld("confName", "");
   $("cName").innerHTML = ((MST.admins || []).length ? MST.admins : (MST.leaders || []).length ? MST.leaders : MST.drivers).map(n => `<option${n === cn ? " selected" : ""}>${esc(n)}</option>`).join("");
   renderConf(); show("conf"); sync();   // 端末の一覧を取り寄せる
@@ -673,21 +703,112 @@ function renderDevs(){
   const pend = Q.filter(a => /^dev/.test(a.action)).map(a => a.id);
   $("dList").innerHTML = `<h3>端末（${l.filter(d => d.st === "使用可").length}台が使用中${l.some(d => d.st === "申請中") ? `・申請 ${l.filter(d => d.st === "申請中").length}件` : ""}）</h3>` + (l.length ? l.map(d => {
     const me = d.id === DID, wait = pend.includes(d.id);
-    const nt = d.notify ? `<b style="color:#e8710a">直行直帰（通知あり）</b>` : `共用（通知なし）`;
+    const nt = (d.admin ? `<b style="color:#1a73e8">管理用</b>　` : "") + (d.notify ? `<b style="color:#e8710a">直行直帰（通知あり）</b>` : `共用（通知なし）`);
     const sub = d.st === "申請中" ? `申請 ${esc(d.req)}　照合番号 <b>${devCode(d.id)}</b>` : d.st === "使用可" ? `${nt}　承認 ${esc(d.ok)}（${esc(d.by)}）　最終通信 ${esc(d.seen || "—")}` : `止めています`;
     const btn = wait ? `<span class="note">送信中…</span>`
       : d.st === "申請中" ? `<button class="ok2" onclick="devDo('devok','${d.id}',true)">承認（直行直帰）</button><button class="ok2" onclick="devDo('devok','${d.id}',false)">承認（共用）</button><button onclick="devDo('devdel','${d.id}')">断る</button>`
-      : d.st === "使用可" ? `<button class="ok2" onclick="devDo('devnotify','${d.id}',${!d.notify})">${d.notify ? "共用にする" : "直行直帰にする"}</button>` + (me ? `<span class="note">この端末</span>` : `<button onclick="devDo('devstop','${d.id}')">止める</button>`)
+      : d.st === "使用可" ? `<button class="ok2" onclick="devDo('devnotify','${d.id}',${!d.notify})">${d.notify ? "共用にする" : "直行直帰にする"}</button><button class="ok2" onclick="devDo('devadmin','${d.id}',${!d.admin})">${d.admin ? "管理用をやめる" : "管理用にする"}</button>` + (me ? `<span class="note">この端末</span>` : `<button onclick="devDo('devstop','${d.id}')">止める</button>`)
       : `<button class="ok2" onclick="devDo('devok','${d.id}')">使えるように戻す</button>`;
     return `<div class="it ${d.st === "申請中" ? "pend" : d.st === "停止" ? "off" : ""}"><div class="nm">${esc(d.name)}<small>${esc(d.who)}${d.who ? "　" : ""}${sub}</small></div>${btn}</div>`;
   }).join("") : `<p class="note">端末の一覧はまだありません（電波のある所で開くと出ます）</p>`);
 }
 function devDo(action, id, notify){
   if(!KEY) return;
-  Q.push({action, key: KEY, id, notify, name: $("cName").value, at: now()}); svQ();
-  toast(action === "devok" ? (notify ? "承認しました（直行直帰：記録が入ると管理者へ通知）" : "承認しました（共用：通知なし）") : action === "devnotify" ? (notify ? "直行直帰にしました（通知あり）" : "共用にしました（通知なし）") : action === "devstop" ? "止めました" : "申請を断りました");
-  const d = DEVS.find(x => x.id === id); if(d && action === "devnotify") d.notify = notify;
+  if(action === "devadmin" && notify && !confirm("この端末を管理用にすると、確認キーなしで確認者の画面に入れます。\nなくしたときは、すぐ「止める」を押してください。よろしいですか？")) return;
+  Q.push({action, key: KEY, id, notify, admin: notify, name: $("cName").value, at: now()}); svQ();
+  toast(action === "devok" ? (notify ? "承認しました（直行直帰：記録が入ると管理者へ通知）" : "承認しました（共用：通知なし）") : action === "devnotify" ? (notify ? "直行直帰にしました（通知あり）" : "共用にしました（通知なし）") : action === "devadmin" ? (notify ? "管理用にしました（キーなしで入れます）" : "管理用をやめました") : action === "devstop" ? "止めました" : "申請を断りました");
+  const d = DEVS.find(x => x.id === id); if(d && action === "devnotify") d.notify = notify; if(d && action === "devadmin") d.admin = notify;
   renderDevs(); sync();
+}
+
+/* ===== 社員・車両・設定（確認キーが入っているときだけ） ===== */
+let ADM = null, ADT = "staff", ED = null;
+function admOpen(){ if(!KEY){ openConf(); return; } show("adm"); admTab(ADT); sync(); }
+function admTab(t){ ADT = t; ["Staff","Car","Set"].forEach(x => $("t" + x).classList.toggle("on", "t" + x === "t" + t[0].toUpperCase() + t.slice(1))); admDraw(); }
+function admBusy(){ return Q.some(a => /^(staff|car)(save|del)$|^set(key|to)$/.test(a.action)); }
+function admDraw(){
+  const b = $("admBody");
+  if(!ADM){ b.innerHTML = `<p class="note">読み込み中…（電波のある所で開いてください）</p>`; return; }
+  const wait = admBusy() ? `<p class="note">送信中…</p>` : "";
+  if(ADT === "staff"){
+    const l = ADM.staff.slice().sort((a, b) => (a.st === "退職") - (b.st === "退職"));
+    b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edStaff(-1)">＋ 社員を追加</button>
+      <p class="cnt">在籍 ${l.filter(x => x.st !== "退職").length}人${l.some(x => x.st === "退職") ? `・退職 ${l.filter(x => x.st === "退職").length}人` : ""}　（押すと直せます）</p>`
+      + l.map(x => `<div class="it${x.st === "退職" ? " out" : ""}" onclick="edStaff(${ADM.staff.indexOf(x)})"><div class="nm">${esc(x.name)}<small>${[x.role, x.dept, x.lic, x.mt, x.st === "退職" ? "退職" : ""].filter(Boolean).map(esc).join("・") || "（役割・課・免許なし）"}</small></div></div>`).join("") + `</div>`;
+  } else if(ADT === "car"){
+    b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edCar(-1)">＋ 車両を追加</button><p class="cnt">${ADM.cars.length}台　（押すと直せます）</p>`
+      + ADM.cars.map((r, i) => `<div class="it" onclick="edCar(${i})"><div class="nm">${esc(r[0])}<small>${[r[1], r[7] ? "必要な免許 " + r[7] : "", r[8], r[9] ? "車検 " + r[9] : ""].filter(Boolean).map(esc).join("・")}</small></div></div>`).join("") + `</div>`;
+  } else {
+    const to = Object.entries(ADM.to || {});
+    b.innerHTML = wait + `<div class="setbox"><h3>確認キーを変える</h3>
+      <input id="nk1" type="password" placeholder="新しい確認キー（4文字以上）" autocomplete="off"><input id="nk2" type="password" placeholder="もう一度" autocomplete="off">
+      <button class="sv" onclick="setKey()">確認キーを変える</button><p class="note">変えたら、確認者の人に新しいキーを伝えてください。管理用の端末はキーなしのまま入れます。</p></div>
+      <div class="setbox"><h3>直行直帰の通知の送り先（LINE WORKS）</h3><div id="toList">${to.map(([n, id]) => toRow(n, id)).join("")}</div>
+      <button class="plus" onclick="$('toList').insertAdjacentHTML('beforeend', toRow('', ''))">＋ 送り先を足す</button><button class="sv" onclick="setTo()">送り先を保存</button>
+      <p class="note">左に名前、右に LINE WORKS の社員ID。名前は、確認したときに「確認者」に入る名前です。</p></div>`;
+  }
+}
+const toRow = (n, id) => `<div class="to"><input class="tn" placeholder="名前" value="${esc(n)}"><input class="ti" placeholder="LINE WORKS の社員ID" value="${esc(id)}"><button onclick="this.parentNode.remove()">消す</button></div>`;
+function admSend(a, msg){ Q.push(Object.assign({key: KEY, at: now()}, a)); svQ(); toast(msg); edClose(); admDraw(); sync(); }
+const opt = (list, v) => list.map(x => `<option value="${esc(x)}"${x === v ? " selected" : ""}>${esc(x || "（なし）")}</option>`).join("");
+function edOpen(title, html, canDel){ $("edT").textContent = title; $("edF").innerHTML = html; $("edDel").classList.toggle("hide", !canDel); $("edit").classList.add("on"); }
+function edClose(){ $("edit").classList.remove("on"); ED = null; }
+function edStaff(i){
+  const x = i >= 0 ? ADM.staff[i] : {name: "", role: "", dept: "工事課", lic: "", mt: "MT", st: "在籍"}, o = ADM.opts;
+  ED = {t: "staff", orig: i >= 0 ? x.name : ""};
+  edOpen(i >= 0 ? x.name + " さん" : "社員を追加", `<label>名前（姓と名の間は空ける）</label><input id="eName" value="${esc(x.name)}">
+    <label>役割</label><select id="eRole">${opt(o.role, x.role)}</select><div class="hint">班長・管理者は、ほかの人の確認ができます</div>
+    <label>課</label><select id="eDept">${opt(o.dept, x.dept)}</select>
+    <label>運転免許</label><select id="eLic">${opt(o.lic, x.lic)}</select><div class="hint">2007年6月より前の普通免許は「中型（8t限定）」、2007年6月〜2017年3月の普通免許は「準中型（5t限定）」</div>
+    <label>MT・AT</label><select id="eMt">${opt(o.mt, x.mt)}</select>
+    <label>状態</label><select id="eSt">${opt(o.st, x.st)}</select><div class="hint">退職にすると名前の一覧から消えます（記録は残ります）</div>`, i >= 0);
+}
+function edCar(i){
+  const r = i >= 0 ? ADM.cars[i] : ["", "", "", "", "", "", "", "", "", "", ""], o = ADM.opts;
+  ED = {t: "car", orig: i >= 0 ? r[0] : ""};
+  edOpen(i >= 0 ? r[0] : "車両を追加", `<label>登録番号（ナンバー）</label><input id="cNo" value="${esc(r[0])}" placeholder="神戸430や1014">
+    <label>車名・車種</label><input id="cNm" value="${esc(r[1])}">
+    <label>種別</label><select id="cKind">${opt(o.kind, r[2])}</select>
+    <label>用途・形状</label><input id="cUse" value="${esc(r[3])}" placeholder="貨物・ダンプ">
+    <label>乗車定員</label><input id="cCap" inputmode="numeric" value="${esc(r[4])}">
+    <label>最大積載量（kg）</label><input id="cLoad" inputmode="numeric" value="${esc(r[5])}">
+    <label>車両総重量（kg）</label><input id="cGvw" inputmode="numeric" value="${esc(r[6])}"><div class="hint">車検証の数字。ここから「必要な免許」を自動で決めます</div>
+    <label>MT・AT</label><select id="cMt">${opt(o.cmt, r[8])}</select>
+    <label>車検満了日</label><input id="cExp" type="date" value="${esc(r[9])}">
+    <label>備考</label><input id="cNote" value="${esc(r[10])}">`, i >= 0);
+}
+function edSave(){
+  if(!ED) return;
+  if(ED.t === "staff"){
+    const v = {name: $("eName").value, role: $("eRole").value, dept: $("eDept").value, lic: $("eLic").value, mt: $("eMt").value, st: $("eSt").value};
+    if(!v.name.trim()){ toast("名前を入れてください"); return; }
+    admSend({action: "staffsave", orig: ED.orig, v}, "保存しました：" + v.name.trim());
+  } else {
+    const v = {no: $("cNo").value, name: $("cNm").value, kind: $("cKind").value, use: $("cUse").value, cap: $("cCap").value, load: $("cLoad").value, gvw: $("cGvw").value, mt: $("cMt").value, exp: $("cExp").value, note: $("cNote").value};
+    if(!v.no.trim()){ toast("登録番号を入れてください"); return; }
+    admSend({action: "carsave", orig: ED.orig, v}, "保存しました：" + v.no.trim());
+  }
+}
+function edDel(){
+  if(!ED || !ED.orig) return;
+  const w = ED.t === "staff" ? ED.orig + " さんを名簿から削除します。\n（辞めた人は「状態：退職」にすると、名前だけ消えて記録の見直しがしやすくなります）\nよろしいですか？" : ED.orig + " を車両の一覧から削除します。よろしいですか？";
+  if(!confirm(w)) return;
+  admSend({action: ED.t === "staff" ? "staffdel" : "cardel", orig: ED.orig}, "削除しました：" + ED.orig);
+}
+function setKey(){
+  const a = $("nk1").value.trim(), b = $("nk2").value.trim();
+  if(a.length < 4){ toast("4文字以上にしてください"); return; }
+  if(a !== b){ toast("2つの入力が同じではありません"); return; }
+  if(!confirm("確認キーを変えます。よろしいですか？")) return;
+  admSend({action: "setkey", nk: a}, "確認キーを変えました");
+  if(KEY !== "@admin") KEY = a;
+}
+function setTo(){
+  const to = {}; let bad = false;
+  document.querySelectorAll("#toList .to").forEach(r => { const n = r.querySelector(".tn").value.trim(), id = r.querySelector(".ti").value.trim(); if(n && id) to[n] = id; else if(n || id) bad = true; });
+  if(bad){ toast("名前と社員IDは両方入れてください"); return; }
+  if(!Object.keys(to).length && !confirm("送り先が0人になります。通知が届かなくなりますが、よろしいですか？")) return;
+  admSend({action: "setto", to}, "送り先を保存しました");
 }
 function tog(id){ STOP.has(id) ? STOP.delete(id) : STOP.add(id); renderConf(); }
 function confirmAll(){
@@ -738,6 +859,8 @@ async function sync(manual){
       }
       if(!(DK && !dkBad)) setDev("ok");
       if(d.devices){ DEVS = d.devices; }
+      if(d.adm){ ADM = d.adm; if(VIEW === "adm") admDraw(); }
+      if(d.me){ ADMIN = !!d.me.admin; sv("admin", ADMIN); if(!ADMIN && KEY === "@admin") KEY = ""; }
       if(send.length){
         Q = Q.slice(send.length); svQ();
         for(const a of send) if(a.action === "submit" && a.rec.date !== ymd()) phDel(a.rec.id);   // 送った古い写真は端末から消す
@@ -754,6 +877,7 @@ async function sync(manual){
   if(manual) toast(ok ? "送信しました" : "送れませんでした（電波が届いていません）。記録はiPadに残っています");
   if(!$("v-home").classList.contains("hide")) home();
   if(!$("v-conf").classList.contains("hide")) renderConf();
+  if(VIEW === "adm") admDraw();
 }
 /* 右上の「未送信◯件」：古いものが30日を超えたら赤 */
 function drawSend(msg){
