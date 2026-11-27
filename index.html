@@ -727,11 +727,11 @@ function renderDevs(){
   const pend = Q.filter(a => /^dev/.test(a.action)).map(a => a.id);
   $("dList").innerHTML = `<h3>端末（${l.filter(d => d.st === "使用可").length}台が使用中${l.some(d => d.st === "申請中") ? `・申請 ${l.filter(d => d.st === "申請中").length}件` : ""}）</h3>` + (l.length ? l.map(d => {
     const me = d.id === DID, wait = pend.includes(d.id);
-    const nt = (d.admin ? `<b style="color:#1a73e8">管理用</b>　` : "") + (d.notify ? `<b style="color:#e8710a">直行直帰（通知あり）</b>` : `共用（通知なし）`);
+    const nt = (d.admin ? `<b style="color:#1a73e8">管理用</b>　` : "") + (d.notify ? `<b style="color:#e8710a">個人版（通知あり）</b>` : `共用（通知なし）`);
     const sub = d.st === "申請中" ? `申請 ${esc(d.req)}　照合番号 <b>${devCode(d.id)}</b>` : d.st === "使用可" ? `${nt}　承認 ${esc(d.ok)}（${esc(d.by)}）　最終通信 ${esc(d.seen || "—")}` : `止めています`;
     const btn = wait ? `<span class="note">送信中…</span>`
-      : d.st === "申請中" ? `<button class="ok2" onclick="devDo('devok','${d.id}',true)">承認（直行直帰）</button><button class="ok2" onclick="devDo('devok','${d.id}',false)">承認（共用）</button><button onclick="devDo('devdel','${d.id}')">断る</button>`
-      : d.st === "使用可" ? `<button class="ok2" onclick="devDo('devnotify','${d.id}',${!d.notify})">${d.notify ? "共用にする" : "直行直帰にする"}</button><button class="ok2" onclick="devDo('devadmin','${d.id}',${!d.admin})">${d.admin ? "管理用をやめる" : "管理用にする"}</button>` + (me ? `<span class="note">この端末</span>` : `<button onclick="devDo('devstop','${d.id}')">止める</button>`)
+      : d.st === "申請中" ? `<button class="ok2" onclick="devDo('devok','${d.id}',true)">承認（個人版）</button><button class="ok2" onclick="devDo('devok','${d.id}',false)">承認（共用）</button><button onclick="devDo('devdel','${d.id}')">断る</button>`
+      : d.st === "使用可" ? `<button class="ok2" onclick="devDo('devnotify','${d.id}',${!d.notify})">${d.notify ? "共用にする" : "個人版にする"}</button><button class="ok2" onclick="devDo('devadmin','${d.id}',${!d.admin})">${d.admin ? "管理用をやめる" : "管理用にする"}</button>` + (me ? `<span class="note">この端末</span>` : `<button onclick="devDo('devstop','${d.id}')">止める</button>`)
       : `<button class="ok2" onclick="devDo('devok','${d.id}')">使えるように戻す</button>`;
     return `<div class="it ${d.st === "申請中" ? "pend" : d.st === "停止" ? "off" : ""}"><div class="nm">${esc(d.name)}<small>${esc(d.who)}${d.who ? "　" : ""}${sub}</small></div>${btn}</div>`;
   }).join("") : `<p class="note">端末の一覧はまだありません（電波のある所で開くと出ます）</p>`);
@@ -740,7 +740,7 @@ function devDo(action, id, notify){
   if(!AK) return;
   if(action === "devadmin" && notify && !confirm("この端末を管理用にすると、確認キーなしで確認者の画面に入れます。\nなくしたときは、すぐ「止める」を押してください。よろしいですか？")) return;
   Q.push({action, ak: AK, id, notify, admin: notify, name: $("aName").value, at: now()}); svQ();
-  toast(action === "devok" ? (notify ? "承認しました（直行直帰：記録が入ると管理者へ通知）" : "承認しました（共用：通知なし）") : action === "devnotify" ? (notify ? "直行直帰にしました（通知あり）" : "共用にしました（通知なし）") : action === "devadmin" ? (notify ? "管理用にしました（キーなしで入れます）" : "管理用をやめました") : action === "devstop" ? "止めました" : "申請を断りました");
+  toast(action === "devok" ? (notify ? "承認しました（個人版：記録が入ると管理者へ通知）" : "承認しました（共用：通知なし）") : action === "devnotify" ? (notify ? "個人版にしました（通知あり）" : "共用にしました（通知なし）") : action === "devadmin" ? (notify ? "管理用にしました（キーなしで入れます）" : "管理用をやめました") : action === "devstop" ? "止めました" : "申請を断りました");
   const d = DEVS.find(x => x.id === id); if(d && action === "devnotify") d.notify = notify; if(d && action === "devadmin") d.admin = notify;
   renderDevs(); sync();
 }
@@ -753,7 +753,22 @@ function admOpen(){
   clearTimeout(akTimer); if(AK !== "@admin") akTimer = setTimeout(() => { AK = ""; if(VIEW === "adm") home(); }, 600000);
   const an = ld("admName", "");
   $("aName").innerHTML = ((MST.admins || []).length ? MST.admins : MST.drivers || []).map(n => `<option${n === an ? " selected" : ""}>${esc(n)}</option>`).join("");
-  show("adm"); admTab(ADT); sync();
+  show("adm"); admTab(ADT); admFetch();
+}
+/* 管理のデータだけを取りに行く（記録の送信とは別に、すぐ問い合わせる） */
+let admLoading = false;
+async function admFetch(){
+  if(!SYNC_URL || admLoading) return;
+  admLoading = true; if(VIEW === "adm") admDraw();
+  try{
+    const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK && !dkBad ? DK : "", did: DID, ds: DS, ak: AK, light: 1})});
+    const d = JSON.parse(await res.text());
+    if(d.akBad){ AK = ""; ADM = null; toast("⚠ 管理パスワードが違います"); if(VIEW === "adm") keyAsk("adm"); }
+    if(d.adm) ADM = d.adm; if(d.devices) DEVS = d.devices;
+    if(d.me){ ADMIN = !!d.me.admin; sv("admin", ADMIN); }
+  }catch(e){ if(VIEW === "adm") toast("管理のデータを読めませんでした（電波を確かめてください）"); }
+  admLoading = false; if(VIEW === "adm") admDraw();
+  if(Q.length) sync();
 }
 function admClose(){ home(); }
 function admTab(t){ ADT = t; ["Rec","Staff","Car","Det","Dev","Set"].forEach(x => $("t" + x).classList.toggle("on", x.toLowerCase() === t)); admDraw(); }
@@ -761,8 +776,8 @@ const ADM_ACT = /^(staff|car|det)(save|del)$|^set(key|to)$|^rec(fix|cancel)$|^de
 function admBusy(){ return Q.some(a => ADM_ACT.test(a.action)); }
 function admDraw(){
   const b = $("admBody");
-  if(!ADM){ b.innerHTML = `<p class="note">読み込み中…（電波のある所で開いてください）</p>`; return; }
-  const wait = admBusy() ? `<p class="note">送信中…</p>` : "";
+  if(!ADM && ADT !== "rec"){ b.innerHTML = `<p class="note">読み込み中…（電波のある所で開いてください）</p>`; return; }
+  const wait = admBusy() ? `<p class="note">送信中…</p>` : admLoading ? `<p class="note">最新に更新中…</p>` : "";
   if(ADT === "rec"){
     const nm = (b.querySelector("#rqN") || {}).value || "", dy = (b.querySelector("#rqD") || {}).value || "";
     const l = all().filter(r => (!nm || r.driver === nm) && (!dy || r.date === dy)).sort((x, y) => x.at < y.at ? 1 : -1).slice(0, 80);
@@ -770,7 +785,7 @@ function admDraw(){
     b.innerHTML = wait + `<div class="adm list"><div class="srch"><select id="rqN" onchange="admDraw()"><option value="">全員</option>${names.map(n => `<option${n === nm ? " selected" : ""}>${esc(n)}</option>`).join("")}</select><input id="rqD" type="date" value="${esc(dy)}" onchange="admDraw()"></div>
       <p class="cnt">この40日の記録（新しい順・${l.length}件まで）。押すと、運転者・ナンバー・運転前後を直したり、取り消したりできます。測った数字と時刻は直せません。</p>`
       + l.map(r => `<div class="it${r.status === "取消" ? " cx" : ""}" onclick="edRec('${esc(r.id)}')"><div class="nm">${esc(r.driver)}<small>${r.at.slice(5, 16).replace("-", "/")} ${r.kind === "前" ? "運転前" : "運転後"}　${esc(r.car)}　${esc(r.status || "")}${r.confirmer ? "（" + esc(r.confirmer) + "）" : ""}</small></div><span class="v ${+r.value > 0 ? "hit" : ""}">${esc(r.value)}</span></div>`).join("")
-      + `</div>` + (ADM.fixes.length ? `<div class="setbox"><h3>直した記録（新しい順）</h3><div class="fixlog">${ADM.fixes.map(f => `${esc(f[0])}　${esc(f[1])}：${esc(f[4])}さん ${esc(f[3].slice(5))} の${esc(f[5])}「${esc(f[6])}」→「${esc(f[7])}」（${esc(f[8])}）`).join("<br>")}</div></div>` : "");
+      + `</div>` + (ADM && ADM.fixes.length ? `<div class="setbox"><h3>直した記録（新しい順）</h3><div class="fixlog">${ADM.fixes.map(f => `${esc(f[0])}　${esc(f[1])}：${esc(f[4])}さん ${esc(f[3].slice(5))} の${esc(f[5])}「${esc(f[6])}」→「${esc(f[7])}」（${esc(f[8])}）`).join("<br>")}</div></div>` : "");
   } else if(ADT === "staff"){
     const l = ADM.staff.slice().sort((a, b) => (a.st === "退職") - (b.st === "退職"));
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edStaff(-1)">＋ 社員を追加</button>
@@ -780,7 +795,7 @@ function admDraw(){
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edCar(-1)">＋ 車両を追加</button><p class="cnt">${ADM.cars.length}台　（押すと直せます）</p>`
       + ADM.cars.map((r, i) => `<div class="it" onclick="edCar(${i})"><div class="nm">${esc(r[0])}<small>${[r[1], r[7] ? "必要な免許 " + r[7] : "", r[8], r[9] ? "車検 " + r[9] : ""].filter(Boolean).map(esc).join("・")}</small></div>${expTag(r[9])}</div>`).join("") + `</div>`;
   } else if(ADT === "dev"){
-    b.innerHTML = `<div class="devs list" id="dList"></div><p class="note">「承認（直行直帰）」は個人スマホなど。その端末の記録は、通知の送り先に LINE WORKS で届きます。玄関iPadなど共用の端末は「承認（共用）」。「管理用」にした端末は、パスワードなしで管理と確認者の画面に入れます（なくしたらすぐ「止める」）。</p>`;
+    b.innerHTML = `<div class="devs list" id="dList"></div><p class="note">「承認（個人版）」は個人のスマホなど。直行直帰・出張・休日の出動など、玄関iPadを使えない人の端末です。その端末の記録は、通知の送り先に LINE WORKS で届きます。玄関iPadなど共用の端末は「承認（共用）」。「管理用」にした端末は、パスワードなしで管理と確認者の画面に入れます（なくしたらすぐ「止める」）。</p>`;
     renderDevs(); return;
   } else if(ADT === "det"){
     b.innerHTML = wait + `<div class="adm list"><button class="add" onclick="edDet(-1)">＋ 検知器を追加</button>
@@ -796,7 +811,7 @@ function admDraw(){
       <div class="setbox"><h3>確認キーを変える</h3>
       <input id="nk1" type="password" placeholder="新しい確認キー（4文字以上）" autocomplete="off"><input id="nk2" type="password" placeholder="もう一度" autocomplete="off">
       <button class="sv" onclick="setKey()">確認キーを変える</button><p class="note">変えたら、確認者の人に新しいキーを伝えてください。管理用の端末はキーなしのまま入れます。</p></div>
-      <div class="setbox"><h3>直行直帰の通知の送り先（LINE WORKS）</h3><div id="toList">${to.map(([n, id]) => toRow(n, id)).join("")}</div>
+      <div class="setbox"><h3>個人版の通知の送り先（LINE WORKS）</h3><div id="toList">${to.map(([n, id]) => toRow(n, id)).join("")}</div>
       <button class="plus" onclick="$('toList').insertAdjacentHTML('beforeend', toRow('', ''))">＋ 送り先を足す</button><button class="sv" onclick="setTo()">送り先を保存</button>
       <p class="note">左に名前、右に LINE WORKS の社員ID。名前は、確認したときに「確認者」に入る名前です。</p>
       <button class="plus" onclick="admSend({action:'notifytest'}, 'ためし送りしています…')">ためし送りする</button></div>
@@ -976,8 +991,9 @@ function printMonth(){
 
 /* 同期（GAS）：電波があるときに10件ずつ送る。圏外ならためておく */
 let busy = false;
+let again = false;
 async function sync(manual){
-  if(!SYNC_URL || busy){ drawSend(); return; }
+  if(!SYNC_URL || busy){ if(busy) again = true; drawSend(); return; }   // 送信中なら、終わってからもう一度送る
   const canSend = (DK && !dkBad) || DEVST === "ok" || DEVST === "pending" || (manual && DEVST === "stopped");   // 承認待ちの間も問い合わせる（承認されたらそのまま送れる）
   if(!canSend){ drawSend(); if(manual) dkOpen(); return; }   // 未登録・止められた・合言葉が違う間は送らない（記録は端末に残す）
   busy = true; drawSend("送信中…");
@@ -990,7 +1006,7 @@ async function sync(manual){
         if(a.action === "submit" && a.rec.hasPh){ const v = await phGet(a.rec.id); body.push(Object.assign({}, a, {rec: Object.assign({}, a.rec, {photo: v ? v.img : ""})})); }
         else body.push(a);
       }
-      const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK && !dkBad ? DK : "", did: DID, ds: DS, key: KEY || undefined, ak: AK || undefined, actions: body})});
+      const res = await fetch(SYNC_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({dk: DK && !dkBad ? DK : "", did: DID, ds: DS, key: KEY || undefined, ak: AK || undefined, wa: AK && (VIEW === "adm" || body.some(a => ADM_ACT.test(a.action) || /^dev/.test(a.action))) ? 1 : undefined, actions: body})});
       const tx = await res.text();
       let d; try{ d = JSON.parse(tx); }catch(e){   // 断られたときは何も消さずに止まる
         if(/DEVICE_PENDING/.test(tx)) setDev("pending");
@@ -1021,6 +1037,7 @@ async function sync(manual){
   if(!$("v-home").classList.contains("hide")) home();
   if(!$("v-conf").classList.contains("hide")) renderConf();
   if(VIEW === "adm") admDraw();
+  if(again){ again = false; setTimeout(() => sync(), 0); }
 }
 /* 右上の「未送信◯件」：古いものが30日を超えたら赤 */
 function drawSend(msg){
